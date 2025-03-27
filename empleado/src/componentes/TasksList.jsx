@@ -15,7 +15,7 @@ export function TasksList() {
     }, []);
 
     return (
-    <div className="grid grid-cols-3 gap-4">
+    <div className="grid grid-cols-7 gap-7">
         {tasks.map(task => (
          <TaskCard key={task.id_empleado} task={task} />
         ))}

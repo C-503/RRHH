@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { set, useForm } from "react-hook-form";
 import { createTask, deleteTask, updateTask, getTask } from "../api/tasks.api";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
@@ -35,9 +35,13 @@ export function TasksFormPages() {
     useEffect(() => {
        async function loadTask() {
             if(params.id){
-                const {data: {nombre, apellido, fecha_contratacion, estatus}} = await getTask(params.id);
+                //jala info de backend y muestra en frontend
+                const {data: {nombre, apellido, departamento, pueesto, salario_base, fecha_contratacion, estatus}} = await getTask(params.id);
                 setValue("nombre", nombre);
                 setValue("apellido", apellido);
+                setValue("departamento", departamento);
+                setValue("pueesto", pueesto);
+                setValue("salario_base", salario_base);
                 setValue("fecha_contratacion", fecha_contratacion);
                 setValue("estatus", estatus);
 
@@ -46,7 +50,7 @@ export function TasksFormPages() {
         loadTask();
 
     }, []);
-
+            //agrega y modifica informacion de empleado
     return (
         <div className="max-w-xl mx-auto">
             <form onSubmit={onSubmit}>
@@ -55,13 +59,27 @@ export function TasksFormPages() {
                     className="bg-zinc-700 p-3 rounded-lg block w-full mb-3"
                 />
                 {errors.nombre && <span>Este campo es requerido</span>}
-
                 <input type="text" placeholder="Apellido"
                     {...register("apellido", { required: true })}
                     className="bg-zinc-700 p-3 rounded-lg block w-full mb-3"
                 />
                 {errors.apellido && <span>Este campo es requerido</span>}
-                <input type="date" placeholder="Fecha de contratación"
+                <input type="text" placeholder="Departamento"
+                    {...register("departamento", { required: true })}
+                    className="bg-zinc-700 p-3 rounded-lg block w-full mb-3"
+                />
+                {errors.departamento && <span>Este campo es requerido</span>}
+                <input type="text" placeholder="Puesto"
+                    {...register("pueesto", { required: true })}
+                    className="bg-zinc-700 p-3 rounded-lg block w-full mb-3"
+                />
+                {errors.pueesto && <span>Este campo es requerido</span>}
+                <input type="text" placeholder="Salario"
+                    {...register("salario_base", { required: true })}
+                    className="bg-zinc-700 p-3 rounded-lg block w-full mb-3"
+                />
+                {errors.salario_base && <span>Este campo es requerido</span>}
+                 <input type="date" placeholder="Fecha de contratación"
                     {...register("fecha_contratacion", { required: true })}
                     className="bg-zinc-700 p-3 rounded-lg block w-full mb-3"
                 />
@@ -77,6 +95,7 @@ export function TasksFormPages() {
             </form>
 
             {params.id && (
+                //boton para eliminar informacion de empleado
                 <div className="flex justify-end">
                      <button 
             className="bg-red-500 p-3 rounded-lg block w-48 mt-3"
