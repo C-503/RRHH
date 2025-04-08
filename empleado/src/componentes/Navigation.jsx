@@ -6,7 +6,10 @@ export function Navigation() {
              <h1 className="font-bold text-3x1 mb-4">Recursos Humanos</h1>
          </Link>
         <button className="bg-indigo-500 px-3 py-2 rounded-lg">
-        <Link to="/tasks-create">create tasks</Link>
+        <Link to="/tasks-create">Crear Empleado</Link>
+        </button>
+        <button className="bg-indigo-500 px-3 py-2 rounded-lg">
+        <Link to="/tasks-boton">Botones</Link>
         </button>
     </div>
     );
