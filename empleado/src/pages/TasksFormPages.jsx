@@ -4,15 +4,13 @@ import { createTask, deleteTask, updateTask, getTask } from "../api/tasks.api";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 
-
 export function TasksFormPages() {
-
-    const { register, handleSubmit, formState: { errors}, setValue } = useForm()
+    const { register, handleSubmit, formState: { errors }, setValue } = useForm();
     const navigate = useNavigate();
     const params = useParams();
 
     const onSubmit = handleSubmit(async data => {
-        if(params.id){
+        if (params.id) {
             await updateTask(params.id, data);
             toast.success("Empleado actualizado con éxito", {
                 style: {
@@ -20,7 +18,7 @@ export function TasksFormPages() {
                     color: "#FFD600"
                 }
             });
-        }else{
+        } else {
             await createTask(data);
             toast.success("Empleado creado con éxito", {
                 style: {
@@ -33,10 +31,9 @@ export function TasksFormPages() {
     });
 
     useEffect(() => {
-       async function loadTask() {
-            if(params.id){
-                //jala info de backend y muestra en frontend
-                const {data: {nombre, apellido, departamento, pueesto, salario_base, fecha_contratacion, estatus}} = await getTask(params.id);
+        async function loadTask() {
+            if (params.id) {
+                const { data: { nombre, apellido, departamento, pueesto, salario_base, fecha_contratacion, estatus } } = await getTask(params.id);
                 setValue("nombre", nombre);
                 setValue("apellido", apellido);
                 setValue("departamento", departamento);
@@ -44,13 +41,11 @@ export function TasksFormPages() {
                 setValue("salario_base", salario_base);
                 setValue("fecha_contratacion", fecha_contratacion);
                 setValue("estatus", estatus);
-
             }
         }
         loadTask();
-
     }, []);
-            //agrega y modifica informacion de empleado
+
     return (
         <div className="max-w-xl mx-auto">
             <form onSubmit={onSubmit}>
@@ -79,7 +74,7 @@ export function TasksFormPages() {
                     className="bg-zinc-700 p-3 rounded-lg block w-full mb-3"
                 />
                 {errors.salario_base && <span>Este campo es requerido</span>}
-                 <input type="date" placeholder="Fecha de contratación"
+                <input type="date" placeholder="Fecha de contratación"
                     {...register("fecha_contratacion", { required: true })}
                     className="bg-zinc-700 p-3 rounded-lg block w-full mb-3"
                 />
@@ -90,32 +85,41 @@ export function TasksFormPages() {
                 />
                 {errors.estatus && <span>Este campo es requerido</span>}
                 <button 
-                className="bg-indigo-500 p-3 rounded-lg block w-full mt-3"
+                    className="bg-indigo-500 p-3 rounded-lg block w-full mt-3"
                 >Guardar</button>
             </form>
 
             {params.id && (
-                //boton para eliminar informacion de empleado
-                <div className="flex justify-end">
-                     <button 
-            className="bg-red-500 p-3 rounded-lg block w-48 mt-3"
-            onClick={async () =>{
-               const accepted = window.confirm("¿Estás seguro de eliminar")
-               if(accepted){
-                  await deleteTask(params.id);
-                   toast.success("Empleado eliminado con éxito", {
-                    style: {
-                        background: "#383838",
-                        color: "#FFD600"
-                    }
-                });
-                navigate("/tasks");
-               }
-            }}>
-                Eliminar
-                </button> 
+                <div className="flex gap-2 justify-end">
+                    <button 
+                        className="bg-yellow-500 p-3 rounded-lg block w-48 mt-3"
+                        type="button"
+                        onClick={() => navigate(`/tasks-prestacion/${params.id}`)}
+
+                    >
+                        Ver Prestaciones
+                    </button>
+
+                    <button 
+                        className="bg-red-500 p-3 rounded-lg block w-48 mt-3"
+                        onClick={async () => {
+                            const accepted = window.confirm("¿Estás seguro de eliminar?");
+                            if (accepted) {
+                                await deleteTask(params.id);
+                                toast.success("Empleado eliminado con éxito", {
+                                    style: {
+                                        background: "#383838",
+                                        color: "#FFD600"
+                                    }
+                                });
+                                navigate("/tasks");
+                            }
+                        }}
+                    >
+                        Eliminar
+                    </button>
                 </div>
-                )}
+            )}
         </div>
-    )
+    );
 }

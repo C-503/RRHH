@@ -124,6 +124,7 @@ export function TasksbuttonsPages() {
         const isrDeduction = parseFloat(isr) || 0;
 
         //Calcular Pago Horas Extra
+        //C503
         let pagoCalculadoOT = 0;
         if (!isNaN(base) && base > 0 && hours >= 0 && tipoNomina && STANDARD_HOURS[tipoNomina]) {
             const standardHoursForPeriod = STANDARD_HOURS[tipoNomina];

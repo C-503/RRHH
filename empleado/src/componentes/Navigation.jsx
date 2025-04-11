@@ -9,7 +9,7 @@ export function Navigation() {
         <Link to="/tasks-create">Crear Empleado</Link>
         </button>
         <button className="bg-indigo-500 px-3 py-2 rounded-lg">
-        <Link to="/tasks-boton">Botones</Link>
+        <Link to="/tasks-boton">Nomina</Link>
         </button>
     </div>
     );
