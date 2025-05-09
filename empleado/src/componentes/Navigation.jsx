@@ -2,16 +2,16 @@ import { Link, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 
 export function Navigation() {
+  //nos sirve para mostar el boton en la pagina que queramos
   const location = useLocation();
   const isTasksPage = location.pathname === "/tasks";
-  const isReportePage = /^\/reportes\/\d+$/.test(location.pathname); // Ruta dinámica /reportes/:id
+  const isReportePage = /^\/reportes\/\d+$/.test(location.pathname); 
   
-  // Estado para almacenar el empleadoId
+ 
   const [empleadoId, setEmpleadoId] = useState(null);
 
-  // Simulamos la obtención de empleadoId, por ejemplo, de la URL o de un estado global/contexto
   useEffect(() => {
-    // Si estamos en la página de reporte y tenemos un ID en la URL, lo usamos
+    
     const match = location.pathname.match(/^\/reportes\/(\d+)$/);
     if (match) {
       setEmpleadoId(match[1]); // Extraemos el ID del empleado de la URL

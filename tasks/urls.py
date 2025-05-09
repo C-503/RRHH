@@ -12,7 +12,7 @@ router.register(r'empleados', EmpleadoViewSet)
 router.register(r'nomina', NominaViewSet)
 router.register(r'prestaciones', PrestacionesViewSet)
 router.register(r'asistencias', AsistenciasViewSet)
-router.register(r'reporte', ReporteViewSet)  # No es necesario registrarlo nuevamente
+router.register(r'reporte', ReporteViewSet) 
 router.register(r'productividad', ProductividadViewSet)
 router.register(r'moduloA', ModuloAViewSet)
 

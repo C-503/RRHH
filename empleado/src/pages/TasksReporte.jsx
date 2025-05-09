@@ -2,12 +2,12 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
-import { getTask } from "../api/tasks.api"; // Asegúrate de que este método está correctamente configurado para obtener los datos del empleado
+import { getTask } from "../api/tasks.api";
 import {
   createTask as createReporte,
   updateTask as updateReporte,
   getTask as getReporte,
-} from "../api/tasks.api.reporte"; // Asegúrate de que estos métodos están bien definidos en tu API
+} from "../api/tasks.api.reporte";
 
 export function TasksReporte() {
     const { register, handleSubmit, formState: { errors }, setValue } = useForm();
@@ -16,11 +16,11 @@ export function TasksReporte() {
 
     useEffect(() => {
         async function loadData() {
-            // Verificar que el empleadoId no esté vacío
+            // Verificamos que el empleadoId no esté vacío
             if (empleadoId) {
                 try {
                     const { data: { nombre, apellido } } = await getTask(empleadoId);
-                    // Establecer el valor completo del empleado en el campo "empleado"
+                    // establecemos el valor del campo empleado con el nombre y apellido del empleado
                     setValue("empleado", `${nombre} ${apellido}`);
                 } catch (error) {
                     console.error("Error al cargar los datos del empleado:", error);
@@ -87,7 +87,7 @@ export function TasksReporte() {
                     <input
                         type="text"
                         id="empleado"
-                        value={empleadoId ? "Cargando..." : ""}  // Mostrar "Cargando..." mientras se carga el nombre
+                        value={empleadoId ? "Cargando..." : ""}  // Mostramos "Cargando..." mientras se carga el nombre
                         readOnly
                         {...register("empleado", { required: "El nombre del empleado es obligatorio" })}
                         className="bg-zinc-700 p-3 rounded-lg block w-full mb-1 text-gray-400 cursor-not-allowed"
