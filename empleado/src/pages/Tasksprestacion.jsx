@@ -159,6 +159,14 @@ export function Tasksprestacion() {
         >
           {isEditing ? "Actualizar" : "Guardar"} Prestación
         </button>
+        {/* Botón Cancelar */}
+        <button
+            type="salida"
+            onClick={() => navigate("/tasks")}
+            className="bg-red-600 hover:bg-red-700 text-white font-bold p-3 rounded-lg block w-full mt-5 transition duration-200"
+        >
+          Regresar
+        </button>
       </form>
     </div>
   );

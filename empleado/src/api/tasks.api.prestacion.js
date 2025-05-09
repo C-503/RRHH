@@ -6,11 +6,10 @@ const taskApiPrestacion = axios.create({
 
 export const getAllTasks = () => taskApiPrestacion.get("/");
 
-export const getTask = (id) => taskApiPrestacion.get(`${id}/`); // Quitar barra inicial aquí también por consistencia
+export const getTask = (id) => taskApiPrestacion.get(`${id}/`);
 
 export const createTask = (task) => taskApiPrestacion.post("/", task);
 
-export const deleteTask = (id) => taskApiPrestacion.delete(`${id}/`); // Quitar barra inicial aquí también
+export const deleteTask = (id) => taskApiPrestacion.delete(`${id}/`); 
 
-// 👇 Corrección aquí 👇
-export const updateTask = (id, task) => taskApiPrestacion.put(`${id}/`, task); // Quita la barra inicial
+export const updateTask = (id, task) => taskApiPrestacion.put(`${id}/`, task);

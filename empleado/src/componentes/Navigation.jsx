@@ -1,17 +1,46 @@
-import {Link} from "react-router-dom";
-export function Navigation() {
-    return (
-        <div className="flex justify-between p-4 ">
-         <Link to ="/tasks">
-             <h1 className="font-bold text-3x1 mb-4">Recursos Humanos</h1>
-         </Link>
-        <button className="bg-indigo-500 px-3 py-2 rounded-lg">
-        <Link to="/tasks-create">Crear Empleado</Link>
-        </button>
-        <button className="bg-indigo-500 px-3 py-2 rounded-lg">
-        <Link to="/tasks-boton">Nomina</Link>
-        </button>
-    </div>
-    );
-    }
+import { Link, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
 
+export function Navigation() {
+  const location = useLocation();
+  const isTasksPage = location.pathname === "/tasks";
+  const isReportePage = /^\/reportes\/\d+$/.test(location.pathname); // Ruta dinámica /reportes/:id
+  
+  // Estado para almacenar el empleadoId
+  const [empleadoId, setEmpleadoId] = useState(null);
+
+  // Simulamos la obtención de empleadoId, por ejemplo, de la URL o de un estado global/contexto
+  useEffect(() => {
+    // Si estamos en la página de reporte y tenemos un ID en la URL, lo usamos
+    const match = location.pathname.match(/^\/reportes\/(\d+)$/);
+    if (match) {
+      setEmpleadoId(match[1]); // Extraemos el ID del empleado de la URL
+    } else {
+      setEmpleadoId(null); // Si no hay ID, dejamos el empleadoId como null
+    }
+  }, [location.pathname]);
+
+  return (
+    <div className="flex justify-between items-center p-4">
+      <Link to="/tasks">
+        <h1 className="font-bold text-3xl mb-4">Recursos Humanos</h1>
+      </Link>
+
+      {isTasksPage && (
+        <div className="flex gap-2">
+          <Link to="/tasks-create" className="bg-indigo-500 px-3 py-2 rounded-lg text-white">
+            Crear Empleado
+          </Link>
+        </div>
+      )}
+
+      {isReportePage && empleadoId && (
+        <div className="flex gap-2">
+          <Link to={`/tasks-reporte-create/${empleadoId}`} className="bg-indigo-500 px-3 py-2 rounded-lg text-white">
+            Crear Reporte
+          </Link>
+        </div>
+      )}
+    </div>
+  );
+}

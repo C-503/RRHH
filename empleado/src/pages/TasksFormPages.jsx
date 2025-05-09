@@ -87,21 +87,37 @@ export function TasksFormPages() {
                 <button 
                     className="bg-indigo-500 p-3 rounded-lg block w-full mt-3"
                 >Guardar</button>
+                 
             </form>
 
+            <div className="flex gap-2 justify-end">
+            <button
+                         type="salida"
+                          onClick={() => navigate("/tasks")}
+                            className="bg-green-500 p-3 rounded-lg block w-35 mt-3"
+                    >   
+                         Regresar
+                     </button>
             {params.id && (
                 <div className="flex gap-2 justify-end">
                     <button 
-                        className="bg-yellow-500 p-3 rounded-lg block w-48 mt-3"
+                        className="bg-yellow-500 p-3 rounded-lg block w-35 mt-3"
                         type="button"
-                        onClick={() => navigate(`/tasks-prestacion/${params.id}`)}
+                      // onClick={() => navigate("/tasks-reporte-create/")}
+                       onClick={() => navigate(`/reportes/${params.id}`)}
 
                     >
-                        Ver Prestaciones
+                        Reportes
                     </button>
-
+                    <button
+                         type="salida"
+                          onClick={() => navigate("/tasks-boton")}
+                            className="bg-orange-500 p-3 rounded-lg block w-35 mt-3"
+                    >   
+                         Nomina
+                     </button>
                     <button 
-                        className="bg-red-500 p-3 rounded-lg block w-48 mt-3"
+                        className="bg-red-500 p-3 rounded-lg block w-35 mt-3"
                         onClick={async () => {
                             const accepted = window.confirm("¿Estás seguro de eliminar?");
                             if (accepted) {
@@ -118,8 +134,9 @@ export function TasksFormPages() {
                     >
                         Eliminar
                     </button>
-                </div>
+                </div>   
             )}
+          </div>  
         </div>
     );
 }
