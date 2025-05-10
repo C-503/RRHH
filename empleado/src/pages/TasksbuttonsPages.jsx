@@ -52,7 +52,7 @@ export function TasksbuttonsPages() {
 
 
     //Efectos
-    // 1. Cargar empleados
+    // 1. Carga empleados
     useEffect(() => {
         async function loadEmpleados() {
             try {
@@ -66,7 +66,7 @@ export function TasksbuttonsPages() {
         loadEmpleados();
     }, []);
 
-    // 2. Cargar datos de nómina existente
+    // 2. Carga datos de nómina existente
     useEffect(() => {
         async function loadNomina() {
             if (params.id) {
@@ -99,7 +99,7 @@ export function TasksbuttonsPages() {
         }
     }, [params.id, setValue, empleados]);
 
-    // 3. Obtener Salario Base Original del empleado seleccionado
+    // 3. Obtiene Salario Base Original del empleado seleccionado
     useEffect(() => {
         if (empleadoSeleccionado !== null && empleados.length > 0) {
             const empleado = empleados.find(emp => emp.id_empleado === empleadoSeleccionado);
@@ -114,16 +114,16 @@ export function TasksbuttonsPages() {
         }
     }, [empleadoSeleccionado, empleados]);
 
-    // 4. Calcular Ingresos Brutos, Deducciones (IGSS calculado, ISR manual) y Sueldo Neto
+    // 4. Calcula Ingresos Brutos, Deducciones (IGSS calculado, ISR manual) y Sueldo Neto
     useEffect(() => {
-        //Obtener Valores Numéricos
+        //Obtiene Valores Numéricos
         const base = parseFloat(salarioBase);
         const hours = parseFloat(cantidadHorasExtra) || 0;
         const bonusAmount = parseFloat(bono) || 0;
         const incentivesAmount = parseFloat(incentivo) || 0;
         const isrDeduction = parseFloat(isr) || 0;
 
-        //Calcular Pago Horas Extra
+        //Calcula el Pago Horas Extra
         //C503
         let pagoCalculadoOT = 0;
         if (!isNaN(base) && base > 0 && hours >= 0 && tipoNomina && STANDARD_HOURS[tipoNomina]) {
@@ -137,20 +137,20 @@ export function TasksbuttonsPages() {
             }
         }
 
-        //Calcular Ingresos Brutos (Base para IGSS)
+        //Calcula los Ingresos Brutos (Base para IGSS)
         let grossRemuneration = 0;
         if (!isNaN(base) && base > 0) {
             grossRemuneration += base;
         }
         grossRemuneration += pagoCalculadoOT + bonusAmount + incentivesAmount;
 
-        //Calcular Deducciones
+        //Calcula las Deducciones
         const iggsCalculado = grossRemuneration * IGSS_RATE;
 
-        //Calcular Sueldo Neto
+        //Calcula el Sueldo Neto
         const netPay = grossRemuneration - iggsCalculado - isrDeduction;
 
-        //Actualizar Campos del Formulario
+        //Actualiza los Campos del Formulario
         setValue("nomina_iggs", iggsCalculado.toFixed(2));
         setValue("nomina_sueldo", netPay.toFixed(2));
 
@@ -193,7 +193,7 @@ export function TasksbuttonsPages() {
     return (
         <div className="max-w-xl mx-auto p-6 bg-zinc-900 rounded-lg shadow-lg">
              <h1 className="text-3xl font-bold mb-6 text-white text-center">
-                {params.id ? "Editar Nómina" : "Crear Nueva Nómina"}
+                {params.id ? "Editar Nómina" : "Crear Nómina"}
             </h1>
             <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
 
@@ -267,6 +267,11 @@ export function TasksbuttonsPages() {
                              className="bg-zinc-700 p-3 rounded-lg block w-full h-14 text-white border border-zinc-600"
                         />
                     </div>
+                     <div className="md:col-span-2 mt-4">
+                        <button type="button" onClick={() => navigate("/tasks")} className="w-full bg-red-600 p-3 rounded-lg text-white font-semibold hover:bg-red-700 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50">
+                            Cancelar
+                        </button>
+                     </div>
                 </div>
 
                 {/* Columna 2 */}
@@ -337,6 +342,7 @@ export function TasksbuttonsPages() {
 
 
                     {/* Botón Guardar */}
+                   
                      <div className="md:col-span-2 mt-4">
                          <button type="submit" className="w-full bg-indigo-600 p-3 rounded-lg text-white font-semibold hover:bg-indigo-700 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50">
                             Guardar Nómina

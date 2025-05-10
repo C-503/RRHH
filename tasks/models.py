@@ -9,6 +9,7 @@ class Empleado(models.Model):
     salario_base = models.DecimalField(max_digits=10, decimal_places=2)
     fecha_contratacion = models.DateField()
     estatus = models.CharField(max_length=20, default='Activo')
+    estado_indemnizacion = models.IntegerField(default=0)
     def __str__(self):
         return self.nombre
     
@@ -59,6 +60,7 @@ class Reporte(models.Model):
     def __str__(self):
         return f"{self.reporte_tipo} - {self.empleado.nombre}"
 
+
 class Productividad(models.Model):
     Productivo_id = models.AutoField(primary_key=True)
     emplaod = models.ForeignKey(Empleado, on_delete=models.CASCADE)
@@ -74,5 +76,44 @@ class ModuloA(models.Model):
     modulo_desc = models.TextField(null=True, blank=True)
     def __str__(self):
         return self.modulo_nombre
-    
+ 
+
+class indemnizacion(models.Model):
+    indem_id = models.AutoField(primary_key=True)
+    empleado = models.ForeignKey('Empleado', on_delete=models.CASCADE)
+    fecha_contratacion = models.DateField()
+    fecha_terminacion = models.DateField()
+    motivo = models.CharField(max_length=150)
+    salario_promedio = models.DecimalField(max_digits=10, decimal_places=2)
+    Calculo_indemnizacion = models.DecimalField(max_digits=10, decimal_places=2)
+    monto_total = models.DecimalField(max_digits=10, decimal_places=2)
+    fecha_pago = models.DateField()
+
+    def __str__(self):
+        return f"{self.empleado.nombre} {self.empleado.apellido} - {self.motivo}"
+
+
+class prestacion_dias(models.Model):
+    prestacion_dias_id = models.AutoField(primary_key=True)
+    empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE)
+    dias_disponibles = models.IntegerField()
+    dias_tomados = models.IntegerField(default=0)
+    fecha_solicitud = models.DateField()
+    ESTADO_CHOICES = [
+        ('Pendiente', 'Pendiente'),
+        ('Aprobada', 'Aprobada'),
+        ('Rechazada', 'Rechazada'),
+        ('Tomados', 'Tomados'),
+    ]
+    estado = models.CharField(max_length=10, choices=ESTADO_CHOICES, default='Pendiente')
+    fecha_aprobacion = models.DateField(null=True, blank=True)
+    fecha_rechazo = models.DateField(null=True, blank=True)
+    motivo_rechazo = models.CharField(max_length=150, null=True, blank=True)
+    periodo = models.IntegerField(null=True, blank=True)
+
+    def dias_restantes(self):
+        return self.dias_disponibles - self.dias_tomados
+
+    def __str__(self):
+        return f"{self.empleado.nombre} {self.empleado.apellido} - Disponibles: {self.dias_disponibles}, Tomados: {self.dias_tomados}"
 

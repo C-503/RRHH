@@ -1,8 +1,11 @@
 from rest_framework import viewsets
-from .models import Empleado, Nomina, Prestaciones, Asistencias, Reporte, Productividad, ModuloA
-from .serializer import EmpleadoSerializer, NominaSerializer, PrestacionesSerializer, AsistenciasSerializer, ReporteSerializer, ProductividadSerializer, ModuloASerializer
+from .models import Empleado, Nomina, Prestaciones, Asistencias, Reporte, Productividad, ModuloA, indemnizacion, prestacion_dias
+from .serializer import EmpleadoSerializer, NominaSerializer, PrestacionesSerializer, AsistenciasSerializer, ReporteSerializer, ProductividadSerializer, ModuloASerializer, IndemnizacionSerializer, PrestacionDiasSerializer
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from datetime import timedelta
+from django.utils import timezone
+from django.db.models import Sum, Count, F, FloatField, ExpressionWrapper
 
 
 class EmpleadoViewSet(viewsets.ModelViewSet):
@@ -14,7 +17,37 @@ class NominaViewSet(viewsets.ModelViewSet):
     queryset = Nomina.objects.all()
     serializer_class = NominaSerializer
 
+    @action(detail=False, methods=['get'], url_path='salario-promedio/(?P<empleado_id>[^/.]+)')
+    def salario_promedio(self, request, empleado_id=None):
+        hoy = timezone.now().date()
+        hace_seis_meses = hoy - timedelta(days=180)
 
+        # Filtra nóminas del empleado en los últimos 6 meses
+        nominas = Nomina.objects.filter(
+            empleado_id=empleado_id,
+            nom_fecha__gte=hace_seis_meses
+        )
+
+        # Calcula el total de ingresos (sueldo + horas extra + bono + incentivos)
+        nominas = nominas.annotate(
+            total=ExpressionWrapper(
+                F('nomina_sueldo') + F('nomina_horasextra') + F('nomina_bono') + F('nomina_incentivos'),
+                output_field=FloatField()
+            )
+        )
+
+        total_ingresos = nominas.aggregate(suma=Sum('total'))['suma'] or 0
+        cantidad_nominas = nominas.aggregate(conteo=Count('id'))['conteo'] or 1
+
+        salario_promedio = total_ingresos / cantidad_nominas
+
+        return Response({
+            'empleado_id': empleado_id,
+            'salario_promedio': round(salario_promedio, 2),
+            'total_ingresos': round(total_ingresos, 2),
+            'numero_nominas': cantidad_nominas
+        })
+    
 class PrestacionesViewSet(viewsets.ModelViewSet):
     queryset = Prestaciones.objects.all()
     serializer_class = PrestacionesSerializer
@@ -67,6 +100,15 @@ class ProductividadViewSet(viewsets.ModelViewSet):
 class ModuloAViewSet(viewsets.ModelViewSet):
     queryset = ModuloA.objects.all()
     serializer_class = ModuloASerializer
+
+
+class IndemnizacionViewSet(viewsets.ModelViewSet):
+    queryset = indemnizacion.objects.all()
+    serializer_class = IndemnizacionSerializer
+
+class PrestacionDiasViewSet(viewsets.ModelViewSet):
+    queryset = prestacion_dias.objects.all()
+    serializer_class = PrestacionDiasSerializer
 
 
 # Create your views here.

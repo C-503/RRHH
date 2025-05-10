@@ -3,8 +3,10 @@ from rest_framework.documentation import include_docs_urls
 from rest_framework import routers
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
-from .views import EmpleadoViewSet, NominaViewSet, PrestacionesViewSet, AsistenciasViewSet, ReporteViewSet, ProductividadViewSet, ModuloAViewSet
+from .views import EmpleadoViewSet, NominaViewSet, PrestacionesViewSet, AsistenciasViewSet, ReporteViewSet, ProductividadViewSet, ModuloAViewSet, IndemnizacionViewSet, PrestacionDiasViewSet
 from django.http import HttpResponse
+
+from tasks import views
 
 # api versioning
 router = routers.DefaultRouter()
@@ -15,6 +17,8 @@ router.register(r'asistencias', AsistenciasViewSet)
 router.register(r'reporte', ReporteViewSet) 
 router.register(r'productividad', ProductividadViewSet)
 router.register(r'moduloA', ModuloAViewSet)
+router.register(r'indemnizacion', IndemnizacionViewSet)
+router.register(r'prestacion_dias', PrestacionDiasViewSet)
 
 schema_view = get_schema_view(
     openapi.Info(

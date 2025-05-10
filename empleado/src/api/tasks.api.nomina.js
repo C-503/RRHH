@@ -13,3 +13,6 @@ export const createTask = (task) => taskApiNomina.post("/", task);
 export const deleteTask = (id) => taskApiNomina.delete(`/${id}`);
 
 export const updateTask = (id, task) => taskApiNomina.put(`/${id}/`, task);
+
+export const getNominasPorEmpleado = (empleadoId) =>
+  taskApiNomina.get(`/empleado/${empleadoId}/`);
