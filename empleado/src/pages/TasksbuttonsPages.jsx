@@ -3,9 +3,9 @@ import { useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import axios from "axios";
-import { createTask, updateTask, getTask } from "../api/tasks.api.nomina";
+import { createTask, updateTask, getTask, deleteTask } from "../api/tasks.api.nomina"; 
 
-//Constantes para Horas Estándar por Periodo 
+//Constantes para Horas Estándar por Periodo
 const STANDARD_HOURS = {
     Semanal: 48,
     Quincenal: 96,
@@ -22,34 +22,35 @@ export function TasksbuttonsPages() {
         watch,
         formState: { errors }
     } = useForm({
-
         defaultValues: {
-            cantidad_horas_extra: 0,
-            nomina_sueldo: 0,
             nomina_horasextra: 0,
+            nomina_sueldo: 0,
             nomina_bono: 0,
             nomina_incentivos: 0,
             nomina_isr: 0,
             nomina_iggs: 0,
             nomina_tipo: "",
-            nom_fecha: ""
+            nom_fecha: "",
+            empleado: null,
+            nombre_empleado: "",
+            salario_base: null,
         }
     });
     const navigate = useNavigate();
-    const params = useParams();
+    const { id: empleadoIdParaNomina, nomina_id } = useParams();
+    const isCreating = !nomina_id;
 
     // Estados
     const [empleados, setEmpleados] = useState([]);
-    const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState(null);
-    const [salarioBase, setSalarioBase] = useState(null);
+    const [salarioBaseEmpleado, setSalarioBaseEmpleado] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false); // Estado para controlar la eliminación
 
     //Observadores de Campos
-    const cantidadHorasExtra = watch("cantidad_horas_extra", 0);
+    const nominaHorasExtra = watch("nomina_horasextra", 0);
     const tipoNomina = watch("nomina_tipo", "");
     const bono = watch("nomina_bono", 0);
     const incentivo = watch("nomina_incentivos", 0);
     const isr = watch("nomina_isr", 0);
-
 
     //Efectos
     // 1. Carga empleados
@@ -66,27 +67,62 @@ export function TasksbuttonsPages() {
         loadEmpleados();
     }, []);
 
-    // 2. Carga datos de nómina existente
+    // 2. Precarga datos del empleado por ID
+    useEffect(() => {
+        async function loadEmpleadoInfo() {
+            if (empleadoIdParaNomina) {
+                try {
+                    const empleado = empleados.find(emp => emp.id_empleado === parseInt(empleadoIdParaNomina));
+                    if (empleado) {
+                        setValue("empleado", parseInt(empleadoIdParaNomina), { shouldValidate: true });
+                        setValue("nombre_empleado", `${empleado.nombre} ${empleado.apellido}`, { shouldValidate: false });
+                        setValue("salario_base", parseFloat(empleado.salario_base), { shouldValidate: false });
+                        setSalarioBaseEmpleado(parseFloat(empleado.salario_base));
+                    } else {
+                        toast.error("Empleado no encontrado.");
+                        navigate("/tasks");
+                    }
+                } catch (error) {
+                    console.error("Error al cargar los datos del empleado:", error);
+                    toast.error("No se pudieron cargar los datos del empleado.");
+                    navigate("/tasks");
+                }
+            }
+        }
+
+        if (empleados.length > 0 && empleadoIdParaNomina) {
+            loadEmpleadoInfo();
+        } else if (!empleadoIdParaNomina) {
+            setValue("nombre_empleado", "", { shouldValidate: false });
+            setValue("salario_base", null, { shouldValidate: false });
+            setSalarioBaseEmpleado(null);
+            setValue("empleado", null, { shouldValidate: false });
+        }
+    }, [empleadoIdParaNomina, setValue, empleados, navigate]);
+
+    // 3. Carga los datos de la nómina para la edición
     useEffect(() => {
         async function loadNomina() {
-            if (params.id) {
+            if (!isCreating && nomina_id) {
+                console.log("nomina_id en loadNomina:", nomina_id);
                 try {
-                    const { data } = await getTask(params.id);
-                    const empleadoId = typeof data.empleado === 'object' && data.empleado !== null
-                        ? data.empleado.id_empleado
-                        : data.empleado;
-
-                    // Establece todos los valores del formulario
-                    setValue("empleado", empleadoId ? parseInt(empleadoId) : null);
-                    setValue("cantidad_horas_extra", data.cantidad_horas_extra || 0);
+                    const { data } = await getTask(nomina_id);
+                    console.log("Datos de la nómina cargados:", data);
+                    setValue("empleado", data.empleado ? (typeof data.empleado === 'object' ? data.empleado.id_empleado : data.empleado) : null);
                     setValue("nomina_horasextra", data.nomina_horasextra || 0);
+                    setValue("nomina_sueldo", data.nomina_sueldo || 0);
                     setValue("nomina_bono", data.nomina_bono || 0);
                     setValue("nomina_incentivos", data.nomina_incentivos || 0);
                     setValue("nomina_isr", data.nomina_isr || 0);
                     setValue("nomina_tipo", data.nomina_tipo || "");
                     setValue("nom_fecha", data.nom_fecha ? data.nom_fecha.split('T')[0] : "");
 
-                    setTimeout(() => setEmpleadoSeleccionado(empleadoId ? parseInt(empleadoId) : null), 0);
+                    const empleadoData = empleados.find(emp => emp.id_empleado === (typeof data.empleado === 'object' ? data.empleado.id_empleado : data.empleado));
+                    if (empleadoData) {
+                        setValue("nombre_empleado", `${empleadoData.nombre} ${empleadoData.apellido}`, { shouldValidate: false });
+                        setValue("salario_base", parseFloat(empleadoData.salario_base), { shouldValidate: false });
+                        setSalarioBaseEmpleado(parseFloat(empleadoData.salario_base));
+                    }
 
                 } catch (error) {
                     console.error("Error cargando la nómina:", error);
@@ -94,37 +130,53 @@ export function TasksbuttonsPages() {
                 }
             }
         }
-        if (empleados.length > 0 || !params.id) {
+
+        if (!isCreating && nomina_id && empleados.length > 0) {
             loadNomina();
         }
-    }, [params.id, setValue, empleados]);
+    }, [nomina_id, setValue, isCreating, empleados]);
 
-    // 3. Obtiene Salario Base Original del empleado seleccionado
+    // 4. Obtiene Salario Base Original del empleado
     useEffect(() => {
-        if (empleadoSeleccionado !== null && empleados.length > 0) {
-            const empleado = empleados.find(emp => emp.id_empleado === empleadoSeleccionado);
-            if (empleado) {
-                const base = parseFloat(empleado.salario_base);
-                setSalarioBase(!isNaN(base) ? base : null);
-            } else {
-                setSalarioBase(null);
-            }
-        } else {
-            setSalarioBase(null);
+        const empleadoSeleccionadoId = watch("empleado");
+        if (empleadoSeleccionadoId && empleados.length > 0) {
+            const empleado = empleados.find(emp => emp.id_empleado === parseInt(empleadoSeleccionadoId));
+            setSalarioBaseEmpleado(empleado ? parseFloat(empleado.salario_base) : null);
+        } else if (empleadoIdParaNomina && empleados.length > 0) {
+            const empleado = empleados.find(emp => emp.id_empleado === parseInt(empleadoIdParaNomina));
+            setSalarioBaseEmpleado(empleado ? parseFloat(empleado.salario_base) : null);
+        } else if (!empleadoSeleccionadoId && !empleadoIdParaNomina) {
+            setSalarioBaseEmpleado(null);
         }
-    }, [empleadoSeleccionado, empleados]);
+    }, [empleadoIdParaNomina, watch, empleados]);
 
-    // 4. Calcula Ingresos Brutos, Deducciones (IGSS calculado, ISR manual) y Sueldo Neto
+    // 5. Calcula Ingresos Brutos, Deducciones y Sueldo Neto
     useEffect(() => {
-        //Obtiene Valores Numéricos
-        const base = parseFloat(salarioBase);
-        const hours = parseFloat(cantidadHorasExtra) || 0;
+        const base = parseFloat(salarioBaseEmpleado);
+        const hours = parseFloat(nominaHorasExtra) || 0;
         const bonusAmount = parseFloat(bono) || 0;
         const incentivesAmount = parseFloat(incentivo) || 0;
         const isrDeduction = parseFloat(isr) || 0;
+        const tipoNomina = watch("nomina_tipo", "");
 
-        //Calcula el Pago Horas Extra
-        //C503
+        let sueldoBasePeriodo = 0;
+        if (!isNaN(base) && base > 0 && tipoNomina) {
+            switch (tipoNomina) {
+                case "Mensual":
+                    sueldoBasePeriodo = base;
+                    break;
+                case "Quincenal":
+                    sueldoBasePeriodo = base / 2;
+                    break;
+                case "Semanal":
+                    sueldoBasePeriodo = base / 4;
+                    break;
+                default:
+                    sueldoBasePeriodo = base;
+                    break;
+            }
+        }
+
         let pagoCalculadoOT = 0;
         if (!isNaN(base) && base > 0 && hours >= 0 && tipoNomina && STANDARD_HOURS[tipoNomina]) {
             const standardHoursForPeriod = STANDARD_HOURS[tipoNomina];
@@ -137,35 +189,21 @@ export function TasksbuttonsPages() {
             }
         }
 
-        //Calcula los Ingresos Brutos (Base para IGSS)
-        let grossRemuneration = 0;
-        if (!isNaN(base) && base > 0) {
-            grossRemuneration += base;
-        }
-        grossRemuneration += pagoCalculadoOT + bonusAmount + incentivesAmount;
-
-        //Calcula las Deducciones
+        let grossRemuneration = sueldoBasePeriodo + pagoCalculadoOT + bonusAmount + incentivesAmount;
         const iggsCalculado = grossRemuneration * IGSS_RATE;
+        const sueldoNominaCalculado = grossRemuneration - iggsCalculado - isrDeduction;
 
-        //Calcula el Sueldo Neto
-        const netPay = grossRemuneration - iggsCalculado - isrDeduction;
-
-        //Actualiza los Campos del Formulario
         setValue("nomina_iggs", iggsCalculado.toFixed(2));
-        setValue("nomina_sueldo", netPay.toFixed(2));
+        setValue("nomina_sueldo", sueldoNominaCalculado.toFixed(2));
 
-    // Dependencias
-    }, [salarioBase, cantidadHorasExtra, tipoNomina, bono, incentivo, isr, setValue]);
-
+    }, [salarioBaseEmpleado, nominaHorasExtra, tipoNomina, bono, incentivo, isr, setValue, watch]);
 
     //Manejador de Envío
     const onSubmit = handleSubmit(async data => {
-
         const payload = {
             ...data,
             empleado: parseInt(data.empleado) || null,
             nomina_sueldo: parseFloat(data.nomina_sueldo) || 0,
-            cantidad_horas_extra: parseFloat(data.cantidad_horas_extra) || 0,
             nomina_horasextra: parseFloat(data.nomina_horasextra) || 0,
             nomina_bono: parseFloat(data.nomina_bono) || 0,
             nomina_incentivos: parseFloat(data.nomina_incentivos) || 0,
@@ -174,12 +212,12 @@ export function TasksbuttonsPages() {
         };
         console.log("Payload a enviar:", payload);
         try {
-            if (params.id) {
-                await updateTask(params.id, payload);
-                toast.success("Nómina actualizada!");
-            } else {
+            if (isCreating) {
                 await createTask(payload);
                 toast.success("Nómina creada!");
+            } else {
+                await updateTask(nomina_id, payload);
+                toast.success("Nómina actualizada!");
             }
             navigate("/tasks");
         } catch (error) {
@@ -189,47 +227,56 @@ export function TasksbuttonsPages() {
         }
     });
 
+    // Función para eliminar la nómina
+    const handleDeleteNomina = async () => {
+        if (nomina_id && !isDeleting) {
+            setIsDeleting(true);
+            try {
+                await deleteTask(nomina_id);
+                toast.success("Nómina eliminada!");
+                navigate("/tasks"); 
+            } catch (error) {
+                console.error("Error al eliminar la nómina:", error);
+                toast.error("No se pudo eliminar la nómina.");
+            } finally {
+                setIsDeleting(false);
+            }
+        }
+    };
+
     //Renderizado JSX
     return (
         <div className="max-w-xl mx-auto p-6 bg-zinc-900 rounded-lg shadow-lg">
-             <h1 className="text-3xl font-bold mb-6 text-white text-center">
-                {params.id ? "Editar Nómina" : "Crear Nómina"}
+            <h1 className="text-3xl font-bold mb-6 text-white text-center">
+                {isCreating ? 'Crear Nómina' : 'Editar Nómina'}
             </h1>
             <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
 
                 {/* Columna 1 */}
                 <div className="space-y-5">
-                    {/* Empleado */}
+                    {/* Empleado (Campo de texto no editable) */}
                     <div>
-                         <label htmlFor="empleado" className="block text-sm font-medium text-gray-300 mb-1">Empleado</label>
-                         <select id="empleado"
-                            {...register("empleado", { required: "Seleccione un empleado" })}
-                            className={`bg-zinc-700 p-3 rounded-lg block w-full h-14 text-white ${errors.empleado ? 'border-red-500 border' : 'border-zinc-600 border'}`}
-                            onChange={e => {
-                                const selectedId = e.target.value ? parseInt(e.target.value) : null;
-                                setValue("empleado", selectedId, { shouldValidate: true });
-                                setEmpleadoSeleccionado(selectedId);
-                            }}
-                        >
-                            <option value="">-- Seleccione --</option>
-                            {empleados.map(emp => (
-                                <option key={emp.id_empleado} value={emp.id_empleado}>
-                                    {emp.nombre} {emp.apellido}
-                                </option>
-                            ))}
-                        </select>
-                         {errors.empleado && <span className="text-red-400 text-xs mt-1">{errors.empleado.message}</span>}
+                        <label className="block text-sm font-medium text-gray-300 mb-1">Empleado</label>
+                        <input
+                            type="text"
+                            className="bg-zinc-800 p-3 rounded-lg block w-full h-14 text-gray-400 border border-zinc-700"
+                            readOnly
+                            value={watch("nombre_empleado") || ""}
+                        />
                     </div>
 
-                    {/* Salario Base Original */}
+                    {/* Salario Base Original (Campo de texto no editable) */}
                     <div>
                         <label className="block text-sm font-medium text-gray-300 mb-1">Salario Base</label>
-                        <div className="bg-zinc-800 p-3 rounded-lg block w-full h-14 text-gray-400 flex items-center border border-zinc-700">
-                            {salarioBase !== null && salarioBase !== undefined ? salarioBase.toFixed(2) : '-'}
-                        </div>
+                        <input
+                            type="number"
+                            className="bg-zinc-800 p-3 rounded-lg block w-full h-14 text-gray-400 border border-zinc-700"
+                            readOnly
+                            value={watch("salario_base") !== null && watch("salario_base") !== undefined ? watch("salario_base").toFixed(2) : ''}
+                        />
                     </div>
 
-                     {/* Sueldo Neto */}
+                    {/* Sueldo Neto */}
                     <div>
                         <label htmlFor="nomina_sueldo" className="block text-sm font-medium text-gray-300 mb-1">Sueldo Nomina</label>
                         <input id="nomina_sueldo"
@@ -241,67 +288,66 @@ export function TasksbuttonsPages() {
                         />
                     </div>
 
-
-                    {/* Cantidad Horas Extra */}
+                    {/* Nomina Horas Extra */}
                     <div>
-                        <label htmlFor="cantidad_horas_extra" className="block text-sm font-medium text-gray-300 mb-1">Cantidad Horas Extra</label>
-                        <input id="cantidad_horas_extra"
+                        <label htmlFor="nomina_horasextra" className="block text-sm font-medium text-gray-300 mb-1">Nomina Horas Extra</label>
+                        <input id="nomina_horasextra"
                             type="number"
                             placeholder="0"
-                            {...register("cantidad_horas_extra", {
+                            {...register("nomina_horasextra", {
                                 valueAsNumber: true,
                                 min: { value: 0, message: "No puede ser negativo" }
                             })}
-                            className={`bg-zinc-700 p-3 rounded-lg block w-full h-14 text-white ${errors.cantidad_horas_extra ? 'border-red-500 border' : 'border-zinc-600 border'}`}
+                            className={`bg-zinc-700 p-3 rounded-lg block w-full h-14 text-white ${errors.nomina_horasextra ? 'border-red-500 border' : 'border-zinc-600 border'}`}
                         />
-                         {errors.cantidad_horas_extra && <span className="text-red-400 text-xs mt-1">{errors.cantidad_horas_extra.message}</span>}
+                        {errors.nomina_horasextra && <span className="text-red-400 text-xs mt-1">{errors.nomina_horasextra.message}</span>}
                     </div>
 
                     {/* Bonos */}
                     <div>
-                         <label htmlFor="nomina_bono" className="block text-sm font-medium text-gray-300 mb-1">Bonos</label>
-                         <input id="nomina_bono"
+                        <label htmlFor="nomina_bono" className="block text-sm font-medium text-gray-300 mb-1">Bonos</label>
+                        <input id="nomina_bono"
                             type="number"
                             placeholder="0.00"
                             {...register("nomina_bono", { valueAsNumber: true, min: 0 })}
-                             className="bg-zinc-700 p-3 rounded-lg block w-full h-14 text-white border border-zinc-600"
+                            className="bg-zinc-700 p-3 rounded-lg block w-full h-14 text-white border border-zinc-600"
                         />
                     </div>
-                     <div className="md:col-span-2 mt-4">
-                        <button type="button" onClick={() => navigate("/tasks")} className="w-full bg-red-600 p-3 rounded-lg text-white font-semibold hover:bg-red-700 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50">
+                    <div className="md:col-span-2 mt-4 flex justify-between">
+                         <button type="button" onClick={() => navigate("/tasks")} className="w-full bg-orange-600 p-3 rounded-lg
+                            text-white font-semibold hover:bg-orange-700 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50">
                             Cancelar
                         </button>
-                     </div>
+                    </div>
                 </div>
-
                 {/* Columna 2 */}
                 <div className="space-y-5">
                     {/* Incentivos */}
                     <div>
                         <label htmlFor="nomina_incentivos" className="block text-sm font-medium text-gray-300 mb-1">Incentivos</label>
-                       <input id="nomina_incentivos"
-                           type="number"
-                           placeholder="0.00"
-                           {...register("nomina_incentivos", { valueAsNumber: true, min: 0 })}
+                        <input id="nomina_incentivos"
+                            type="number"
+                            placeholder="0.00"
+                            {...register("nomina_incentivos", { valueAsNumber: true, min: 0 })}
                             className="bg-zinc-700 p-3 rounded-lg block w-full h-14 text-white border border-zinc-600"
-                       />
-                   </div>
+                        />
+                    </div>
 
-                   {/* ISR */}
-                   <div>
-                       <label htmlFor="nomina_isr" className="block text-sm font-medium text-gray-300 mb-1">ISR</label>
-                       <input id="nomina_isr"
-                           type="number"
-                           placeholder="0.00"
-                           {...register("nomina_isr", { required: "ISR requerido", valueAsNumber: true, min: 0 })}
-                           className={`bg-zinc-700 p-3 rounded-lg block w-full h-14 text-white ${errors.nomina_isr ? 'border-red-500 border' : 'border-zinc-600 border'}`}
-                       />
-                       {errors.nomina_isr && <span className="text-red-400 text-xs mt-1">{errors.nomina_isr.message}</span>}
-                   </div>
+                    {/* ISR */}
+                    <div>
+                        <label htmlFor="nomina_isr" className="block text-sm font-medium text-gray-300 mb-1">ISR</label>
+                        <input id="nomina_isr"
+                            type="number"
+                            placeholder = "0.00"
+                            {...register("nomina_isr", { required: "ISR requerido", valueAsNumber: true, min: 0 })}
+                            className={`bg-zinc-700 p-3 rounded-lg block w-full h-14 text-white ${errors.nomina_isr ? 'border-red-500 border' : 'border-zinc-600 border'}`}
+                        />
+                        {errors.nomina_isr && <span className="text-red-400 text-xs mt-1">{errors.nomina_isr.message}</span>}
+                    </div>
 
                     {/* IGSS */}
                     <div>
-                         {/* Etiqueta actualizada */}
+                        {/* Etiqueta actualizada */}
                         <label htmlFor="nomina_iggs" className="block text-sm font-medium text-gray-300 mb-1">IGSS (Calculo {IGSS_RATE * 100}%)</label>
                         <input id="nomina_iggs"
                             type="number"
@@ -310,8 +356,7 @@ export function TasksbuttonsPages() {
                             className="bg-zinc-800 p-3 rounded-lg block w-full h-14 text-gray-400 border border-zinc-700"
                             readOnly
                         />
-                   </div>
-
+                    </div>
 
                     {/* Tipo Nómina */}
                     <div>
@@ -331,26 +376,38 @@ export function TasksbuttonsPages() {
                     {/* Fecha Nómina */}
                     <div>
                         <label htmlFor="nom_fecha" className="block text-sm font-medium text-gray-300 mb-1">Fecha Nómina</label>
-                       <input id="nom_fecha"
-                           type="date"
-                           {...register("nom_fecha", { required: "Fecha requerida" })}
-                           className={`bg-zinc-700 p-3 rounded-lg block w-full h-14 text-white ${errors.nom_fecha ? 'border-red-500 border' : 'border-zinc-600 border'}`}
-                           style={{ colorScheme: "dark" }}
-                       />
-                       {errors.nom_fecha && <span className="text-red-400 text-xs mt-1">{errors.nom_fecha.message}</span>}
-                   </div>
+                        <input id="nom_fecha"
+                            type="date"
+                            {...register("nom_fecha", { required: "Fecha requerida" })}
+                            className={`bg-zinc-700 p-3 rounded-lg block w-full h-14 text-white ${errors.nom_fecha ? 'border-red-500 border' : 'border-zinc-600 border'}`}
+                            style={{ colorScheme: "dark" }}
+                        />
+                        {errors.nom_fecha && <span className="text-red-400 text-xs mt-1">{errors.nom_fecha.message}</span>}
+                    </div>
 
-
-                    {/* Botón Guardar */}
-                   
-                     <div className="md:col-span-2 mt-4">
-                         <button type="submit" className="w-full bg-indigo-600 p-3 rounded-lg text-white font-semibold hover:bg-indigo-700 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50">
-                            Guardar Nómina
+                    {/* Botón Guardar / Actualizar */}
+                    <div className="md:col-span-2 mt-4">
+                        <button type="submit" className="w-full bg-indigo-600 p-3 rounded-lg
+                            text-white font-semibold hover:bg-indigo-700 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50"
+                        >
+                            {isCreating ? 'Guardar Nómina' : 'Actualizar Nómina'}
                         </button>
                     </div>
+                    <div className="md:col-span-2 mt-4">
+                       {!isCreating && (
+                            <button
+                                type="button"
+                                onClick={handleDeleteNomina}
+                                className={`w-full bg-red-600 p-3 rounded-lg
+                            text-white font-semibold hover:bg-red-700 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50" ${isDeleting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                disabled={isDeleting}
+                            >
+                                {isDeleting ? 'Eliminando...' : 'Eliminar Nómina'}
+                            </button>
+                        )}
+                        </div>
                 </div>
             </form>
         </div>
     );
 }
-

@@ -47,6 +47,12 @@ class NominaViewSet(viewsets.ModelViewSet):
             'total_ingresos': round(total_ingresos, 2),
             'numero_nominas': cantidad_nominas
         })
+
+    @action(detail=False, methods=['get'], url_path='empleado/(?P<empleado_id>[^/.]+)')
+    def nominas_por_empleado(self, request, empleado_id=None):
+        nominas = self.queryset.filter(empleado_id=empleado_id)
+        serializer = self.get_serializer(nominas, many=True)
+        return Response(serializer.data)
     
 class PrestacionesViewSet(viewsets.ModelViewSet):
     queryset = Prestaciones.objects.all()

@@ -113,7 +113,7 @@ export function TasksFormPages() {
                         </button>
                         <button
                             type="button"
-                            onClick={() => navigate("/tasks-boton")}
+                            onClick={() => navigate(`/tasks-nomina/${params.id}`)}
                             className="bg-orange-500 p-3 rounded-lg block w-35 text-white"
                         >
                             Nomina

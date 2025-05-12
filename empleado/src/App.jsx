@@ -9,7 +9,7 @@ import { TasksReporte } from "./pages/TasksReporte";
 import { TasksIndem } from "./pages/TasksIndem";
 import { TasksClem } from "./pages/TasksClem";
 import  TasksIndemPages  from "./pages/TasksIndemPages";
-import { TasksNominaPages } from "./pages/TasksNominaPages";
+import  TasksNominaPages  from "./pages/TasksNominaPages";
 import {Toaster} from "react-hot-toast";
 
 function App(){
@@ -22,7 +22,8 @@ function App(){
     <Route path= "/tasks" element={<Taskspages/>} />
     <Route path= "/tasks-create" element={<TasksFormPages/>} />
     <Route path= "/tasks/:id" element={<TasksFormPages/>} />
-    <Route path= "/tasks-boton" element={<TasksbuttonsPages/>} />
+    <Route path= "/tasks-boton/:id" element={<TasksbuttonsPages/>} />
+    <Route path= "/tasks-boton/:id/:nomina_id?" element={<TasksbuttonsPages/>} />
     <Route path= "/tasks-prestacion/:id" element={<Tasksprestacion/>} />
     <Route path="/reportes/:id" element={<TasksReportepages />} />
     <Route path="/tasks-reporte-create/:id" element={<TasksReporte />} />
@@ -31,7 +32,7 @@ function App(){
     <Route path="/tasks-indem-pages" element={<TasksIndemPages />} />
     <Route path="/tasks-indem" element={<TasksIndem />} />
     <Route path="/tasks-indem/:id" element={<TasksIndem />} />
-    <Route path="/tasks-nomina" element={<TasksNominaPages />} />
+    <Route path="/tasks-nomina/:id_empleado" element={<TasksNominaPages />} />
 </Routes>
       <Toaster/>
       </div>
