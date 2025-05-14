@@ -13,3 +13,6 @@ export const createTask = (task) => taskApiPresta.post("/", task);
 export const deleteTask = (id) => taskApiPresta.delete(`/${id}`);
 
 export const updateTask = (id, task) => taskApiPresta.put(`/${id}/`, task);
+
+export const getPrestacionesByEmpleado = (idEmpleado) =>
+  taskApiPresta.get(`/?empleado=${idEmpleado}`);

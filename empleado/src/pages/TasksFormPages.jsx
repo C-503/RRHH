@@ -40,7 +40,7 @@ export function TasksFormPages() {
                 setValue("pueesto", pueesto);
                 setValue("salario_base", salario_base);
                 setValue("fecha_contratacion", fecha_contratacion);
-                setValue("estatus", estatus); // Permitimos la edición del estatus al editar
+                setValue("estatus", estatus); 
             } else {
                 setValue("estatus", 'Activo'); // Establecemos el valor por defecto para creación
             }
@@ -86,7 +86,7 @@ export function TasksFormPages() {
                     placeholder="Estatus"
                     {...register("estatus", { required: true })}
                     className="bg-zinc-800 p-3 rounded-lg block w-full mb-3 text-gray-400"
-                    readOnly // Campo de solo lectura para creación
+                    readOnly 
                 />
                 {errors.estatus && <span className="text-red-400">Este campo es requerido</span>}
                 <button
@@ -107,9 +107,10 @@ export function TasksFormPages() {
                         <button
                             className="bg-yellow-500 p-3 rounded-lg block w-35 text-white"
                             type="button"
-                            onClick={() => navigate(`/reportes/${params.id}`)}
+                            //onClick={() => navigate(`/reportes/${params.id}`)}
+                            onClick={() => navigate(`/tasks-list-prestaciones/${params.id}`)}
                         >
-                            Reportes
+                            Prestaciones
                         </button>
                         <button
                             type="button"

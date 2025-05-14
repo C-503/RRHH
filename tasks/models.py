@@ -19,7 +19,7 @@ class Nomina(models.Model):
     empleado = models.ForeignKey('Empleado', on_delete=models.CASCADE)
     nomina_sueldo = models.DecimalField(max_digits=10, decimal_places=2)
     nomina_horasextra = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    nomina_bono = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    nomina_bono = models.DecimalField(max_digits=10, decimal_places=2)
     nomina_incentivos = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     nomina_isr = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     nomina_iggs = models.DecimalField(max_digits=10, decimal_places=2, default=0)

@@ -116,5 +116,11 @@ class PrestacionDiasViewSet(viewsets.ModelViewSet):
     queryset = prestacion_dias.objects.all()
     serializer_class = PrestacionDiasSerializer
 
+    @action(detail=False, methods=['get'], url_path='empleado/(?P<empleado_id>[^/.]+)')
+    def prestaciones_por_empleado(self, request, empleado_id=None):
+        prestaciones = self.queryset.filter(empleado_id=empleado_id)
+        serializer = self.get_serializer(prestaciones, many=True)
+        return Response(serializer.data)
+
 
 # Create your views here.
