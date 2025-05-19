@@ -10,6 +10,7 @@ export function Navigation() {
   const isTasksIdPage = location.pathname === "/tasks";
   const isTasksNominaPage = /^\/tasks-nomina\/\d+$/.test(location.pathname);
   const isTasksPrestacionPage = /^\/tasks-list-prestaciones\/\d+$/.test(location.pathname);
+  const isTasksReportePage = location.pathname === "/tasks";
   //const isTasksIdPage = /^\/tasks\/\d+$/.test(location.pathname);
 
   const [empleadoId, setEmpleadoId] = useState(null);
@@ -62,15 +63,21 @@ export function Navigation() {
         )}
 
        {isTasksNominaPage && empleadoId && (
-  <Link to={`/tasks-boton/${empleadoId}`} className="bg-yellow-500 px-3 py-2 rounded-lg text-white">
-    Crear Nomina
-  </Link>
-)}
+        <Link to={`/tasks-boton/${empleadoId}`} className="bg-yellow-500 px-3 py-2 rounded-lg text-white">
+         Crear Nomina
+       </Link>
+        )}
        {isTasksPrestacionPage && empleadoId && (
-  <Link to={`/tasks-prestacion-create/${empleadoId}`} className="bg-yellow-500 px-3 py-2 rounded-lg text-white">
-    Crear Prestacion
-  </Link>
-)}
+         <Link to={`/tasks-prestacion-create/${empleadoId}`} className="bg-yellow-500 px-3 py-2 rounded-lg text-white">
+         Crear Prestacion
+          </Link>
+        )}
+
+        {isTasksReportePage && (
+          <Link to="/tasks-rep-nomina" className="bg-yellow-400 px-3 py-2 rounded-lg text-white">
+            Reporte Nomina
+          </Link>
+        )}
 
       </div>
     </div>
