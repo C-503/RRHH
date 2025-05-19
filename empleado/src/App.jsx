@@ -6,7 +6,7 @@ import { Tasksprestacion } from "./pages/Tasksprestacion";
 import { Navigation } from "./componentes/Navigation";
 import { TasksReportepages } from "./pages/TasksReportepages";
 import { TasksReporte } from "./pages/TasksReporte";
-import { TasksIndem } from "./pages/TasksIndem";
+import { TasksIndem }  from "./pages/TasksIndem";
 import { TasksClem } from "./pages/TasksClem";
 import  TasksIndemPages  from "./pages/TasksIndemPages";
 import  TasksListPrestaciones  from "./pages/TasksListPrestaciones";

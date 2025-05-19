@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Empleado, Nomina, Prestaciones, Asistencias, Reporte, Productividad, ModuloA, indemnizacion, prestacion_dias
+from .models import Empleado, Nomina, Prestaciones, Asistencias, Reporte, Productividad, ModuloA, indemnizacion, prestacion_dias, Usuario
 
 class EmpleadoSerializer(serializers.ModelSerializer):
     class Meta:
@@ -51,5 +51,9 @@ class PrestacionDiasSerializer(serializers.ModelSerializer):
     class Meta:
         model = prestacion_dias
         fields = '__all__'
+        
 
-
+class UsuarioSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Usuario
+        fields = '__all__'

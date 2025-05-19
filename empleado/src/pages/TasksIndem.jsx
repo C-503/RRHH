@@ -23,6 +23,7 @@ export function TasksIndem() {
     const navigate = useNavigate();
     const params = useParams();
 
+    const [diasDescanso, setDiasDescanso] = useState(0);
     const [empleados, setEmpleados] = useState([]);
     const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState(null);
     const [fechaContratacion, setFechaContratacion] = useState("");
@@ -83,6 +84,7 @@ export function TasksIndem() {
                 setFechaContratacion(empleado.fecha_contratacion);
                 setSalarioPromedio(isNaN(salario) ? 0 : salario);
                 setValue("fecha_contratacion", empleado.fecha_contratacion);
+                setDiasDescanso(empleado.dias_descanso || 0);
             }
         }
     }, [empleadoSeleccionado, empleados, setValue]);
@@ -92,20 +94,27 @@ export function TasksIndem() {
         if (fechaContratacion && fechaTerminacion && !isNaN(salarioPromedio)) {
             const inicio = new Date(fechaContratacion);
             const fin = new Date(fechaTerminacion);
-            const dias = Math.floor((fin - inicio) / (1000 * 60 * 60 * 24));
-            const calculo = dias * (salarioPromedio / 30);
+            const diasTrabajados = Math.floor((fin - inicio) / (1000 * 60 * 60 * 24));
+            const aniosExactos = diasTrabajados / 365.25;
+            const calculo = aniosExactos * salarioPromedio;
+
+            // Cálculo adicional: 10% del salario base * días de descanso
+            const extraDescanso = (salarioPromedio * 0.10) * diasDescanso;
+
             setCalculoIndemnizacion(calculo);
-            setMontoTotal(calculo);
+            setMontoTotal(extraDescanso + calculo);
         } else {
             setCalculoIndemnizacion(0);
             setMontoTotal(0);
         }
-    }, [fechaContratacion, fechaTerminacion, salarioPromedio]);
+    }, [fechaContratacion, fechaTerminacion, salarioPromedio, diasDescanso]);
 
     const onSubmit = handleSubmit(async data => {
         const salarioPromedioNumerico = parseFloat(salarioPromedio);
         const calculoIndemnizacionNumerico = parseFloat(calculoIndemnizacion);
-        const montoTotalNumerico = parseFloat(montoTotal);
+        // Cálculo adicional: 10% del salario base * días de descanso
+        const extraDescanso = (salarioPromedioNumerico * 0.10) * diasDescanso;
+        const montoTotalNumerico = parseFloat(extraDescanso + calculoIndemnizacionNumerico);
 
         const payload = {
             empleado: parseInt(data.empleado),
@@ -149,7 +158,6 @@ export function TasksIndem() {
     const handleDelete = async () => {
         if (params.id) {
             try {
-                
                 const { data: indemnizacionAEliminar } = await getIndemnizacion(params.id);
                 const empleadoId = indemnizacionAEliminar?.empleado;
 
@@ -158,18 +166,12 @@ export function TasksIndem() {
 
                 if (empleadoId) {
                     try {
-                        // Llamamos a la API para verificar si el empleado tiene otras indemnizaciones activas
-                        const resIndemnizaciones = await axios.get(`http://localhost:8000/tasks/api/v1/indemnizacion/?empleado=${empleadoId}`);
-                        const indemnizacionesActivas = resIndemnizaciones.data.filter(indemnizacion => indemnizacion.fecha_pago === null || new Date(indemnizacion.fecha_pago) > new Date()); // Ajusta tu lógica de "activa"
-
-                        // Si no hay indemnizaciones activas, actualizamos el estado del empleado a 0
-                        if (indemnizacionesActivas.length === 0) {
-                            await updateEmpleadoEstadoIndemnizacion(empleadoId, 0);
-                            console.log(`Estado del empleado ${empleadoId} actualizado a inactivo.`);
-                        }
-                    } catch (errorVerificarEmpleado) {
-                        console.error("Error al verificar/actualizar el estado del empleado:", errorVerificarEmpleado);
-                        toast.error("Error al verificar el estado del empleado.");
+                        // Actualizar el estado del empleado a 0 directamente al eliminar la indemnización
+                        await updateEmpleadoEstadoIndemnizacion(empleadoId, 0);
+                        console.log(`Estado del empleado ${empleadoId} actualizado a inactivo.`);
+                    } catch (errorActualizarEmpleado) {
+                        console.error("Error al actualizar el estado del empleado:", errorActualizarEmpleado);
+                        toast.error("Error al actualizar el estado del empleado.");
                     }
                 }
 
@@ -263,18 +265,37 @@ export function TasksIndem() {
                         />
                         {errors.fecha_pago && <span className="text-red-400 text-xs mt-1">{errors.fecha_pago.message}</span>}
                     </div>
+                    
+                    <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-1">Días de Descanso</label>
+                        <input
+                          type="number"
+                          value={diasDescanso}
+                          disabled
+                         className="bg-zinc-800 p-3 rounded-lg block w-full h-14 text-gray-400 border border-zinc-700"
+                        />
+                    </div>
+
+                   
                 </div>
 
                 <div className="md:col-span-2 space-y-5">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-300 mb-1">Salario Promedio</label>
                             <div className="bg-zinc-700 p-3 rounded-lg text-white h-14 flex items-center justify-center">{!isNaN(salarioPromedio) ? salarioPromedio.toFixed(2) : 'N/A'}</div>
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-1">Cálculo Indemnización</label>
+                            <label className="block text-sm font-medium text-gray-300 mb-1"> Indemnización</label>
                             <div className="bg-zinc-700 p-3 rounded-lg text-white h-14 flex items-center justify-center">{!isNaN(calculoIndemnizacion) ? calculoIndemnizacion.toFixed(2) : 'N/A'}</div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-1"> Dias Descanso </label>
+                            <div className="bg-zinc-700 p-3 rounded-lg text-white h-14 flex items-center justify-center">
+                                {(!isNaN(salarioPromedio) && !isNaN(diasDescanso)) ? ((salarioPromedio * 0.10 * diasDescanso).toFixed(2)) : 'N/A'}
+                            </div>
                         </div>
 
                         <div>

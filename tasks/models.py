@@ -10,6 +10,7 @@ class Empleado(models.Model):
     fecha_contratacion = models.DateField()
     estatus = models.CharField(max_length=20, default='Activo')
     estado_indemnizacion = models.IntegerField(default=0)
+    dias_descanso = models.IntegerField(default=0)
     def __str__(self):
         return self.nombre
     
@@ -113,7 +114,19 @@ class prestacion_dias(models.Model):
 
     def dias_restantes(self):
         return self.dias_disponibles - self.dias_tomados
-
+    
     def __str__(self):
         return f"{self.empleado.nombre} {self.empleado.apellido} - Disponibles: {self.dias_disponibles}, Tomados: {self.dias_tomados}"
+    
+
+class Usuario(models.Model):
+    username = models.CharField(max_length=150, unique=True)
+    password = models.CharField(max_length=128)  
+    nombre = models.CharField(max_length=150)
+
+    def __str__(self):
+        return self.username
+
+
+
 

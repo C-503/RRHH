@@ -1,6 +1,6 @@
 from rest_framework import viewsets
-from .models import Empleado, Nomina, Prestaciones, Asistencias, Reporte, Productividad, ModuloA, indemnizacion, prestacion_dias
-from .serializer import EmpleadoSerializer, NominaSerializer, PrestacionesSerializer, AsistenciasSerializer, ReporteSerializer, ProductividadSerializer, ModuloASerializer, IndemnizacionSerializer, PrestacionDiasSerializer
+from .models import Empleado, Nomina, Prestaciones, Asistencias, Reporte, Productividad, ModuloA, indemnizacion, prestacion_dias, Usuario
+from .serializer import EmpleadoSerializer, NominaSerializer, PrestacionesSerializer, AsistenciasSerializer, ReporteSerializer, ProductividadSerializer, ModuloASerializer, IndemnizacionSerializer, PrestacionDiasSerializer, UsuarioSerializer
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from datetime import timedelta
@@ -123,4 +123,10 @@ class PrestacionDiasViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
+class UsuarioViewSet(viewsets.ModelViewSet):
+    queryset = Usuario.objects.all()
+    serializer_class = UsuarioSerializer
+
+
+    
 # Create your views here.

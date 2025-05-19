@@ -14,6 +14,16 @@ export const deleteTask = (id) => taskApi.delete(`/${id}`);
 
 export const updateTask = (id, task) => taskApi.put(`/${id}/`, task);
 
+export const updateEmpleado = async (id, empleadoData) => {
+    try {
+        const response = await taskApi.put(`/${id}/`, empleadoData);
+        return response.data;
+    } catch (error) {
+        console.error("Error al actualizar el empleado:", error);
+        throw error;
+    }
+};
+
 export const updateEmpleadoEstadoIndemnizacion = async (idEmpleado, estado) => {
     try {
         const response = await taskApi.patch(`/${idEmpleado}/`, {

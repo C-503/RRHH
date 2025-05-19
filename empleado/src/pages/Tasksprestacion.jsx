@@ -3,8 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { useEffect, useState } from "react";
 
-
-import { getTask as getEmpleado } from "../api/tasks.api"; 
+import { getTask as getEmpleado, updateEmpleado } from "../api/tasks.api"; // Importa updateEmpleado
 import {
     createTask,
     updateTask,
@@ -13,7 +12,7 @@ import {
 } from "../api/tasks.api.presta";
 
 export function Tasksprestacion() {
-    const { id: empleadoId, prestacion_dias_id } = useParams(); 
+    const { id: empleadoId, prestacion_dias_id } = useParams();
     const navigate = useNavigate();
     const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm({
         defaultValues: {
@@ -25,12 +24,15 @@ export function Tasksprestacion() {
             fecha_rechazo: "",
             motivo_rechazo: "",
             periodo: "",
+            dias_descanso: 0,
         }
     });
 
     const [empleado, setEmpleado] = useState(null);
-    const isCreating = !prestacion_dias_id; 
+    const isCreating = !prestacion_dias_id;
     const [isLoading, setIsLoading] = useState(true);
+    // Nuevo estado para guardar los dias_restantes originales al editar
+    const [originalDiasRestantes, setOriginalDiasRestantes] = useState(0);
 
     const dias_disponibles = watch("dias_disponibles") || 0;
     const dias_tomados = watch("dias_tomados") || 0;
@@ -45,6 +47,7 @@ export function Tasksprestacion() {
                 const resEmpleado = await getEmpleado(empleadoId);
                 setEmpleado(resEmpleado.data);
                 console.log("Datos del empleado cargados:", resEmpleado.data);
+                setValue("dias_descanso", resEmpleado.data.dias_descanso || 0);
             } catch (error) {
                 console.error("Error al cargar datos del empleado:", error);
                 toast.error("No se pudieron cargar los datos del empleado.");
@@ -59,19 +62,19 @@ export function Tasksprestacion() {
         } else {
             console.log("useEffect loadEmpleadoData: No hay Empleado ID.");
         }
-    }, [empleadoId]);
+    }, [empleadoId, setValue]);
 
     useEffect(() => {
         async function loadPrestacionData() {
             console.log("useEffect loadPrestacionData ejecutándose...");
             console.log("Empleado ID:", empleadoId);
-            console.log("Prestacion ID:", prestacion_dias_id); 
+            console.log("Prestacion ID:", prestacion_dias_id);
             console.log("isCreating:", isCreating);
-            if (!isCreating && prestacion_dias_id) { 
+            if (!isCreating && prestacion_dias_id) {
                 setIsLoading(true);
                 try {
-                    console.log("Intentando cargar prestación con ID:", prestacion_dias_id); 
-                    const resPrestacion = await getPrestacionDia(prestacion_dias_id); 
+                    console.log("Intentando cargar prestación con ID:", prestacion_dias_id);
+                    const resPrestacion = await getPrestacionDia(prestacion_dias_id);
                     console.log("Respuesta de getPrestacionDia:", resPrestacion);
                     if (resPrestacion.data) {
                         console.log("Datos de la prestación cargados:", resPrestacion.data);
@@ -84,7 +87,10 @@ export function Tasksprestacion() {
                             fecha_rechazo: resPrestacion.data.fecha_rechazo ? resPrestacion.data.fecha_rechazo.split('T')[0] : "",
                             motivo_rechazo: resPrestacion.data.motivo_rechazo || "",
                             periodo: resPrestacion.data.periodo || "",
+                            dias_descanso: 0,
                         });
+                        // Guardar los dias_restantes originales para el cálculo correcto al editar
+                        setOriginalDiasRestantes((resPrestacion.data.dias_disponibles || 0) - (resPrestacion.data.dias_tomados || 0));
                         console.log("Formulario reseteado con datos de la prestación.");
                     } else {
                         toast.error("Prestación no encontrada.");
@@ -109,6 +115,7 @@ export function Tasksprestacion() {
                     fecha_rechazo: "",
                     motivo_rechazo: "",
                     periodo: "",
+                    dias_descanso: 0,
                 });
                 console.log("Formulario reseteado a valores por defecto (creación o sin ID).");
                 setIsLoading(false);
@@ -116,7 +123,6 @@ export function Tasksprestacion() {
             }
         }
 
-        // Carga datos de la prestación si estamos en modo de edición y el empleado ya se cargó
         if (empleadoId) {
             loadPrestacionData();
         } else {
@@ -138,22 +144,57 @@ export function Tasksprestacion() {
             fecha_rechazo: data.fecha_rechazo || null,
         };
 
-        console.log("Datos a enviar al backend:", dataToSend);
+        console.log("Datos a enviar al backend (prestación):", dataToSend);
 
         try {
+            let responsePrestacion;
             if (isCreating) {
                 console.log("Creando nueva prestación...");
-                const response = await createTask(dataToSend);
-                console.log("Respuesta de createTask:", response);
+                responsePrestacion = await createTask(dataToSend);
+                console.log("Respuesta de createTask:", responsePrestacion);
                 toast.success("Prestación registrada con éxito");
             } else {
                 console.log("Actualizando prestación con ID:", prestacion_dias_id);
-                const response = await updateTask(prestacion_dias_id, dataToSend); 
-                console.log("Respuesta de updateTask:", response);
+                responsePrestacion = await updateTask(prestacion_dias_id, dataToSend);
+                console.log("Respuesta de updateTask:", responsePrestacion);
                 toast.success("Prestación actualizada con éxito");
             }
 
-            navigate(`/tasks-list-prestaciones/${empleadoId}`); 
+            // Actualizar los días de descanso del empleado
+            let nuevosDiasDescanso;
+            if (isCreating) {
+                nuevosDiasDescanso = empleado.dias_descanso + dias_restantes;
+            } else {
+                // Al editar, sumar solo la diferencia de dias_restantes
+                nuevosDiasDescanso = empleado.dias_descanso + (dias_restantes - originalDiasRestantes);
+            }
+            console.log("Días de descanso actuales del empleado:", empleado.dias_descanso);
+            console.log("Días restantes de la prestación:", dias_restantes);
+            console.log("Nuevos días de descanso a guardar:", nuevosDiasDescanso);
+
+            try {
+                // Construir el payload completo del empleado para el PUT
+                const empleadoPayload = {
+                    nombre: empleado.nombre,
+                    apellido: empleado.apellido,
+                    departamento: empleado.departamento,
+                    pueesto: empleado.pueesto, // Ojo: así está en tu modelo
+                    salario_base: empleado.salario_base,
+                    fecha_contratacion: empleado.fecha_contratacion,
+                    estatus: empleado.estatus,
+                    estado_indemnizacion: empleado.estado_indemnizacion,
+                    dias_descanso: nuevosDiasDescanso,
+                };
+                const responseEmpleado = await updateEmpleado(empleadoId, empleadoPayload);
+                console.log("Respuesta de updateEmpleado:", responseEmpleado);
+                toast.success("Días de descanso del empleado actualizados.");
+            } catch (error) {
+                console.error("Error al actualizar días de descanso:", error);
+                toast.error("No se pudieron actualizar los días de descanso del empleado.");
+                // Considerar si quieres revertir la operación de la prestación aquí
+            }
+
+            navigate(`/tasks-list-prestaciones/${empleadoId}`);
 
         } catch (error) {
             console.error("Error al guardar:", error);
@@ -201,6 +242,18 @@ export function Tasksprestacion() {
                             />
                         </div>
                     )}
+
+                     {/* Campo de días de descanso (solo lectura) */}
+                    <div className="mb-4">
+                        <label className="text-gray-300 block mb-1">Días de descanso</label>
+                        <input
+                            type="number"
+                            value={empleado?.dias_descanso || 0}
+                            className="bg-zinc-700 p-3 rounded-lg w-full text-gray-400 cursor-not-allowed"
+                            readOnly
+                        />
+                    </div>
+
                     <div className="mb-4">
                         <label className="text-gray-300 block mb-1">Días disponibles</label>
                         <input
@@ -239,8 +292,8 @@ export function Tasksprestacion() {
 
                     <button
                         type="button"
-                        onClick={() => navigate(`/tasks-list-prestaciones/${empleadoId}`)} 
-                        className="bg-red-600 hover:bg-green-700 text-white font-bold p-3 rounded-lg w-full"
+                        onClick={() => navigate(`/tasks-list-prestaciones/${empleadoId}`)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold p-3 rounded-lg w-full"
                     >
                         Cancelar
                     </button>
@@ -307,15 +360,16 @@ export function Tasksprestacion() {
 
                     {!isCreating && (
                        <button
-                        type="button"
-                           onClick={handleDelete}
-                           className="mt-2 bg-red-700 hover:bg-red-800 text-white font-bold p-3 rounded-lg w-full"
-                       >      
-                          Eliminar
-                               </button>
-                      )}
+                            type="button"
+                            onClick={handleDelete}
+                            className="mt-2 bg-red-700 hover:bg-red-800 text-white font-bold p-3 rounded-lg w-full"
+                        >
+                            Eliminar
+                        </button>
+                    )}
                 </div>
             </form>
         </div>
     );
 }
+
