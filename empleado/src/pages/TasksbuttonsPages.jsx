@@ -154,10 +154,44 @@ export function TasksbuttonsPages() {
     useEffect(() => {
         const base = parseFloat(salarioBaseEmpleado);
         const hours = parseFloat(nominaHorasExtra) || 0;
-        const bonusAmount = parseFloat(bono) || 0;
+        let bonusAmount = parseFloat(bono) || 0;
         const incentivesAmount = parseFloat(incentivo) || 0;
         const isrDeduction = parseFloat(isr) || 0;
         const tipoNomina = watch("nomina_tipo", "");
+        const fechaNomina = watch("nom_fecha", "");
+
+        // --- Cálculo de Bono 14 ---
+        let bono14 = 0;
+        if (!isNaN(base) && base > 0 && tipoNomina && fechaNomina) {
+            const fecha = new Date(fechaNomina);
+            if (tipoNomina === "Mensual") {
+                // Cada mes
+                bono14 = base / 12;
+            } else if (tipoNomina === "Quincenal") {
+                // Solo en la segunda quincena del mes
+                // Asumimos que la segunda quincena es cuando el día es mayor a 15
+                if (fecha.getDate() > 15) {
+                    bono14 = base / 24;
+                }
+            } else if (tipoNomina === "Semanal") {
+                // Solo en la última semana del mes
+                // Si la semana contiene el último día del mes
+                const lastDayOfMonth = new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0).getDate();
+                // Si la fecha está en los últimos 7 días del mes
+                if (fecha.getDate() > lastDayOfMonth - 7) {
+                    bono14 = base / 52;
+                }
+            }
+        }
+        // Sumar bono 14 automáticamente al campo de bonos (sin sobreescribir si el usuario ya lo puso manualmente)
+        // Si el bono 14 calculado es distinto al que ya está, lo actualizamos
+        if (bono14 > 0 && Math.abs(bono - bono14) > 0.01) {
+            setValue("nomina_bono", bono14.toFixed(2), { shouldValidate: false });
+            bonusAmount = bono14;
+        } else if (bono14 === 0 && bono !== 0) {
+            setValue("nomina_bono", 0, { shouldValidate: false });
+            bonusAmount = 0;
+        }
 
         let sueldoBasePeriodo = 0;
         if (!isNaN(base) && base > 0 && tipoNomina) {
