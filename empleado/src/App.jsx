@@ -12,6 +12,7 @@ import  TasksIndemPages  from "./pages/TasksIndemPages";
 import  TasksListPrestaciones  from "./pages/TasksListPrestaciones";
 import  TasksNominaPages  from "./pages/TasksNominaPages";
 import  TasksReportNomina  from "./pages/TasksReportNomina";
+import  TasksLogin  from "./pages/TasksLogin";
 import {Toaster} from "react-hot-toast";
 
 function App(){
@@ -38,6 +39,7 @@ function App(){
     <Route path="/tasks-indem/:id" element={<TasksIndem />} />
     <Route path="/tasks-nomina/:id_empleado" element={<TasksNominaPages />} />
     <Route path="/tasks-rep-nomina" element={<TasksReportNomina />} />
+    <Route path="/login" element={<TasksLogin />} />
 </Routes>
       <Toaster/>
       </div>
