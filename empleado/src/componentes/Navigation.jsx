@@ -11,6 +11,8 @@ export function Navigation() {
   const isTasksNominaPage = /^\/tasks-nomina\/\d+$/.test(location.pathname);
   const isTasksPrestacionPage = /^\/tasks-list-prestaciones\/\d+$/.test(location.pathname);
   const isTasksReportePage = location.pathname === "/tasks";
+  const isTasksAsisPage = location.pathname === "/tasks";
+  const isTasksProductividadPage = location.pathname === "/tasks-asis";
   //const isTasksIdPage = /^\/tasks\/\d+$/.test(location.pathname);
 
   const [empleadoId, setEmpleadoId] = useState(null);
@@ -76,6 +78,18 @@ export function Navigation() {
         {isTasksReportePage && (
           <Link to="/tasks-rep-nomina" className="bg-yellow-400 px-3 py-2 rounded-lg text-white">
             Reporte Nomina
+          </Link>
+        )}
+
+        {isTasksAsisPage && (
+          <Link to="/tasks-asis" className="bg-blue-500 px-3 py-2 rounded-lg text-white">
+            Asistencia
+          </Link>
+        )}
+
+        {isTasksProductividadPage && (
+          <Link to="/tasks-productividad" className="bg-blue-500 px-3 py-2 rounded-lg text-white">
+            Productividad
           </Link>
         )}
 

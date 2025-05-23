@@ -1,5 +1,6 @@
 from django.db import models
 from decimal import Decimal
+from django.utils import timezone
 
 class Empleado(models.Model):
     id_empleado = models.AutoField(primary_key=True)
@@ -66,12 +67,13 @@ class Reporte(models.Model):
 
 class Productividad(models.Model):
     Productivo_id = models.AutoField(primary_key=True)
-    emplaod = models.ForeignKey(Empleado, on_delete=models.CASCADE)
-    inpro_TC = models.IntegerField()
-    inpro_horasT = models.IntegerField()
-    inpro_ev = models.DecimalField(max_digits=5, decimal_places=2)
+    empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE)
+    fecha = models.DateField(default=timezone.now) 
+    inpro_TC = models.IntegerField() 
+    inpro_horasT = models.IntegerField() 
+    inpro_ev = models.DecimalField(max_digits=5, decimal_places=2)  
     def __str__(self):
-        return f"{self.inpro_TC} - {self.emplaod.nombre}"
+        return f"{self.inpro_TC} - {self.empleado.nombre} - {self.fecha}"
 
 class ModuloA(models.Model):
     modulo_id = models.AutoField(primary_key=True)
