@@ -11,7 +11,7 @@ function Login() {
     e.preventDefault();
     const success = await login(username, password);
     if (success) {
-      // Guardar usuario y contraseña en localStorage
+      // Guardamos usuario y contraseña en localStorage
       localStorage.setItem('username', username);
       localStorage.setItem('password', password);
       navigate('/tasks');

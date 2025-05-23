@@ -7,7 +7,7 @@ export function TasksClem() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Obtener usuario y contraseña del localStorage
+    // Obtenemos usuario y contraseña del localStorage
     const storedUser = localStorage.getItem('username') || '';
     const storedPassword = localStorage.getItem('password') || '';
     setUser(storedUser);
@@ -15,7 +15,7 @@ export function TasksClem() {
   }, []);
 
   const handleLogout = () => {
-    // Limpiar datos de login y redirigir
+    // Limpiamos los datos de login y redirigimos al login
     localStorage.removeItem('username');
     localStorage.removeItem('password');
     navigate('/login');

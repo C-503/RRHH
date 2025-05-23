@@ -10,6 +10,7 @@ import {
 } from "../api/tasks.api.indem";
 import axios from "axios";
 import { updateEmpleadoEstadoIndemnizacion } from "../api/tasks.api";
+import { getNominasPorEmpleado } from "../api/tasks.api.nomina";
 
 export function TasksIndem() {
     const {
@@ -30,6 +31,7 @@ export function TasksIndem() {
     const [salarioPromedio, setSalarioPromedio] = useState(0);
     const [calculoIndemnizacion, setCalculoIndemnizacion] = useState(0);
     const [montoTotal, setMontoTotal] = useState(0);
+    const [bonoTotal, setBonoTotal] = useState(0);
     const [isLoadingIndemnizacion, setIsLoadingIndemnizacion] = useState(true);
 
     useEffect(() => {
@@ -77,6 +79,24 @@ export function TasksIndem() {
     }, [params.id, setValue]);
 
     useEffect(() => {
+        async function fetchBonoTotal() {
+            if (empleadoSeleccionado) {
+                try {
+                    const res = await getNominasPorEmpleado(empleadoSeleccionado);
+                    // Sumar todos los bonos de las nóminas de este empleado
+                    const totalBonos = res.data.reduce((acc, nomina) => acc + (parseFloat(nomina.nomina_bono) || 0), 0);
+                    setBonoTotal(totalBonos);
+                } catch (error) {
+                    setBonoTotal(0);
+                }
+            } else {
+                setBonoTotal(0);
+            }
+        }
+        fetchBonoTotal();
+    }, [empleadoSeleccionado]);
+
+    useEffect(() => {
         if (empleadoSeleccionado !== null && empleados.length > 0) {
             const empleado = empleados.find(emp => emp.id_empleado === empleadoSeleccionado);
             if (empleado) {
@@ -85,6 +105,7 @@ export function TasksIndem() {
                 setSalarioPromedio(isNaN(salario) ? 0 : salario);
                 setValue("fecha_contratacion", empleado.fecha_contratacion);
                 setDiasDescanso(empleado.dias_descanso || 0);
+                // setBonoTotal(parseFloat(empleado.bono_total) || 0); // Ya no se usa, ahora viene de nómina
             }
         }
     }, [empleadoSeleccionado, empleados, setValue]);
@@ -102,19 +123,20 @@ export function TasksIndem() {
             const extraDescanso = (salarioPromedio * 0.10) * diasDescanso;
 
             setCalculoIndemnizacion(calculo);
-            setMontoTotal(extraDescanso + calculo);
+            setMontoTotal(extraDescanso + calculo + bonoTotal);
         } else {
             setCalculoIndemnizacion(0);
             setMontoTotal(0);
         }
-    }, [fechaContratacion, fechaTerminacion, salarioPromedio, diasDescanso]);
+    }, [fechaContratacion, fechaTerminacion, salarioPromedio, diasDescanso, bonoTotal]);
 
     const onSubmit = handleSubmit(async data => {
         const salarioPromedioNumerico = parseFloat(salarioPromedio);
         const calculoIndemnizacionNumerico = parseFloat(calculoIndemnizacion);
         // Cálculo adicional: 10% del salario base * días de descanso
         const extraDescanso = (salarioPromedioNumerico * 0.10) * diasDescanso;
-        const montoTotalNumerico = parseFloat(extraDescanso + calculoIndemnizacionNumerico);
+        const bonoTotalNumerico = parseFloat(bonoTotal) || 0;
+        const montoTotalNumerico = parseFloat(extraDescanso + calculoIndemnizacionNumerico + bonoTotalNumerico);
 
         const payload = {
             empleado: parseInt(data.empleado),
@@ -280,9 +302,9 @@ export function TasksIndem() {
                 </div>
 
                 <div className="md:col-span-2 space-y-5">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-1">Salario Promedio</label>
+                            <label className="block text-sm font-medium text-gray-300 mb-1">Salario</label>
                             <div className="bg-zinc-700 p-3 rounded-lg text-white h-14 flex items-center justify-center">{!isNaN(salarioPromedio) ? salarioPromedio.toFixed(2) : 'N/A'}</div>
                         </div>
 
@@ -296,6 +318,11 @@ export function TasksIndem() {
                             <div className="bg-zinc-700 p-3 rounded-lg text-white h-14 flex items-center justify-center">
                                 {(!isNaN(salarioPromedio) && !isNaN(diasDescanso)) ? ((salarioPromedio * 0.10 * diasDescanso).toFixed(2)) : 'N/A'}
                             </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-1">Bono Total</label>
+                            <div className="bg-zinc-700 p-3 rounded-lg text-white h-14 flex items-center justify-center">{!isNaN(bonoTotal) ? bonoTotal.toFixed(2) : 'N/A'}</div>
                         </div>
 
                         <div>

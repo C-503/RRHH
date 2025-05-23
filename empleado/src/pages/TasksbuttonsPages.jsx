@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import axios from "axios";
-import { createTask, updateTask, getTask, deleteTask } from "../api/tasks.api.nomina"; 
+import { createTask, updateTask, getTask, deleteTask, getNominasPorEmpleado } from "../api/tasks.api.nomina"; 
 
 //Constantes para Horas Estándar por Periodo
 const STANDARD_HOURS = {
@@ -34,6 +34,7 @@ export function TasksbuttonsPages() {
             empleado: null,
             nombre_empleado: "",
             salario_base: null,
+            bono_total: 0, // Nuevo campo
         }
     });
     const navigate = useNavigate();
@@ -44,6 +45,7 @@ export function TasksbuttonsPages() {
     const [empleados, setEmpleados] = useState([]);
     const [salarioBaseEmpleado, setSalarioBaseEmpleado] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false); // Estado para controlar la eliminación
+    const [bonoAcumulado, setBonoAcumulado] = useState(0); // Acumulado de bonos anteriores
 
     //Observadores de Campos
     const nominaHorasExtra = watch("nomina_horasextra", 0);
@@ -51,6 +53,7 @@ export function TasksbuttonsPages() {
     const bono = watch("nomina_bono", 0);
     const incentivo = watch("nomina_incentivos", 0);
     const isr = watch("nomina_isr", 0);
+    const bonoTotal = watch("bono_total", 0); // Nuevo observador
 
     //Efectos
     // 1. Carga empleados
@@ -78,6 +81,10 @@ export function TasksbuttonsPages() {
                         setValue("nombre_empleado", `${empleado.nombre} ${empleado.apellido}`, { shouldValidate: false });
                         setValue("salario_base", parseFloat(empleado.salario_base), { shouldValidate: false });
                         setSalarioBaseEmpleado(parseFloat(empleado.salario_base));
+                        // Obtener bonos acumulados
+                        const res = await getNominasPorEmpleado(empleadoIdParaNomina);
+                        const totalBonos = res.data.reduce((acc, nomina) => acc + (parseFloat(nomina.nomina_bono) || 0), 0);
+                        setBonoAcumulado(totalBonos);
                     } else {
                         toast.error("Empleado no encontrado.");
                         navigate("/tasks");
@@ -193,6 +200,10 @@ export function TasksbuttonsPages() {
             bonusAmount = 0;
         }
 
+        // Calcular bono_total como la suma acumulada de bonos anteriores + el actual
+        const totalBonos = bonoAcumulado + (parseFloat(bonusAmount) || 0);
+        setValue("bono_total", totalBonos.toFixed(2), { shouldValidate: false });
+
         let sueldoBasePeriodo = 0;
         if (!isNaN(base) && base > 0 && tipoNomina) {
             switch (tipoNomina) {
@@ -230,10 +241,25 @@ export function TasksbuttonsPages() {
         setValue("nomina_iggs", iggsCalculado.toFixed(2));
         setValue("nomina_sueldo", sueldoNominaCalculado.toFixed(2));
 
-    }, [salarioBaseEmpleado, nominaHorasExtra, tipoNomina, bono, incentivo, isr, setValue, watch]);
+    }, [salarioBaseEmpleado, nominaHorasExtra, tipoNomina, bono, incentivo, isr, setValue, watch, bonoAcumulado]);
 
     //Manejador de Envío
     const onSubmit = handleSubmit(async data => {
+        let totalBonosPrevios = 0;
+        try {
+            if (data.empleado) {
+                const res = await getNominasPorEmpleado(data.empleado);
+                // Si es edición, excluye la nómina actual del cálculo
+                const nominasFiltradas = isCreating
+                    ? res.data
+                    : res.data.filter(nomina => String(nomina.id) !== String(nomina_id) && String(nomina.nomina_id) !== String(nomina_id));
+                totalBonosPrevios = nominasFiltradas.reduce((acc, nomina) => acc + (parseFloat(nomina.nomina_bono) || 0), 0);
+            }
+        } catch (e) {
+            totalBonosPrevios = 0;
+        }
+        // Siempre suma el bono actual del formulario
+        const bonoTotalFinal = (totalBonosPrevios + (parseFloat(data.nomina_bono) || 0)).toFixed(2);
         const payload = {
             ...data,
             empleado: parseInt(data.empleado) || null,
@@ -243,6 +269,7 @@ export function TasksbuttonsPages() {
             nomina_incentivos: parseFloat(data.nomina_incentivos) || 0,
             nomina_isr: parseFloat(data.nomina_isr) || 0,
             nomina_iggs: parseFloat(data.nomina_iggs) || 0,
+            bono_total: bonoTotalFinal, // Enviar como string decimal
         };
         console.log("Payload a enviar:", payload);
         try {
@@ -342,10 +369,19 @@ export function TasksbuttonsPages() {
                         <label htmlFor="nomina_bono" className="block text-sm font-medium text-gray-300 mb-1">Bonos</label>
                         <input id="nomina_bono"
                             type="number"
+                            step="0.01"
                             placeholder="0.00"
                             {...register("nomina_bono", { valueAsNumber: true, min: 0 })}
                             className="bg-zinc-700 p-3 rounded-lg block w-full h-14 text-white border border-zinc-600"
                         />
+                        
+                    </div>
+                    {/* Bono Total (solo visualización, no input) */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-1">Bono Total Acumulado</label>
+                        <div className="bg-zinc-800 p-3 rounded-lg block w-full h-14 text-gray-400 border border-zinc-700 flex items-center">
+                            {bonoAcumulado + (isCreating ? (parseFloat(watch("nomina_bono")) || 0) : 0)}
+                        </div>
                     </div>
                     <div className="md:col-span-2 mt-4 flex justify-between">
                          <button type="button" onClick={() => navigate("/tasks")} className="w-full bg-orange-600 p-3 rounded-lg
