@@ -83,9 +83,16 @@ export function TasksIndem() {
             if (empleadoSeleccionado) {
                 try {
                     const res = await getNominasPorEmpleado(empleadoSeleccionado);
-                    // Sumar todos los bonos de las nóminas de este empleado
-                    const totalBonos = res.data.reduce((acc, nomina) => acc + (parseFloat(nomina.nomina_bono) || 0), 0);
-                    setBonoTotal(totalBonos);
+                    const nominas = res.data;
+                    if (Array.isArray(nominas) && nominas.length > 0) {
+                        // Ordenar por fecha descendente (más reciente primero)
+                        const nominasOrdenadas = nominas.slice().sort((a, b) => new Date(b.nom_fecha) - new Date(a.nom_fecha));
+                        // Tomar el bono_total o nomina_bono del último registro
+                        const ultimoBono = parseFloat(nominasOrdenadas[0].bono_total ?? nominasOrdenadas[0].nomina_bono) || 0;
+                        setBonoTotal(ultimoBono);
+                    } else {
+                        setBonoTotal(0);
+                    }
                 } catch (error) {
                     setBonoTotal(0);
                 }
@@ -335,14 +342,14 @@ export function TasksIndem() {
                 <div className="md:col-span-2 flex justify-between items-center">
                     <button
                         type="submit"
-                        className="w-full md:w-auto bg-blue-600 py-3 px-4 rounded-lg text-white text-lg"
+                        className="w-full md:w-auto bg-green-600 hover:bg-green-700 py-3 px-4 rounded-lg text-white text-lg"
                     >
                         {params.id ? "Actualizar" : "Crear"} Indemnización
                     </button>
                       <button
                             type="button"
-                            onClick= {() => navigate("/tasks")}
-                            className="ml-2 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg text-lg"
+                            onClick= {() => navigate("/tasks-indem-pages")}
+                            className="ml-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg text-lg"
                         >
                             Regresar
                         </button>

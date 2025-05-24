@@ -13,6 +13,7 @@ export function Navigation() {
   const isTasksReportePage = location.pathname === "/tasks";
   const isTasksAsisPage = location.pathname === "/tasks";
   const isTasksProductividadPage = location.pathname === "/tasks-asis";
+  const isTasksProduct = location.pathname === "/tasks-productividad";
   //const isTasksIdPage = /^\/tasks\/\d+$/.test(location.pathname);
 
   const [empleadoId, setEmpleadoId] = useState(null);
@@ -90,6 +91,12 @@ export function Navigation() {
         {isTasksProductividadPage && (
           <Link to="/tasks-productividad" className="bg-blue-500 px-3 py-2 rounded-lg text-white">
             Productividad
+          </Link>
+        )}
+
+        {isTasksProduct && (
+          <Link to="/tasks-product" className="bg-blue-500 px-3 py-2 rounded-lg text-white">
+            Crear Productividad
           </Link>
         )}
 

@@ -22,13 +22,13 @@ export function TasksClem() {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10 bg-white p-6 rounded-lg shadow-md relative">
+    <div className="max-w-md mx-auto mt-10 bg-gray-700 p-6 rounded-lg shadow-md relative">
       {/* Esquina superior derecha, texto pequeño */}
       <span className="absolute top-2 right-4 text-xs text-[#FFD600] font-mono">Clemonoit503</span>
-      <h1 className="text-xl text-gray-700 text-center mb-2">Modulo Admin</h1>
-      <h2 className="text-2xl text-gray-700 mb-4 text-center">Datos de Sesión</h2>
+      <h1 className="text-xl text-white-700 text-center mb-2">Modulo Admin</h1>
+      <h2 className="text-2xl text-white-700 mb-4 text-center">Datos de Sesión</h2>
       <div className="mb-4">
-        <label className="block text-gray-700 font-semibold mb-1">Usuario:</label>
+        <label className="block text-white-700 font-semibold mb-1">Usuario:</label>
         <input
           type="text"
           value={user}
@@ -37,7 +37,7 @@ export function TasksClem() {
         />
       </div>
       <div className="mb-6">
-        <label className="block text-gray-700 font-semibold mb-1">Contraseña:</label>
+        <label className="block text-white-700 font-semibold mb-1">Contraseña:</label>
         <input
           type="password"
           value={password}

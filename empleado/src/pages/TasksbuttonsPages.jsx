@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import axios from "axios";
 import { createTask, updateTask, getTask, deleteTask, getNominasPorEmpleado } from "../api/tasks.api.nomina"; 
@@ -13,6 +13,7 @@ const STANDARD_HOURS = {
 };
 const OVERTIME_RATE_MULTIPLIER = 1.5;
 const IGSS_RATE = 0.0483;
+
 
 export function TasksbuttonsPages() {
     const {
@@ -38,6 +39,8 @@ export function TasksbuttonsPages() {
         }
     });
     const navigate = useNavigate();
+    const location = useLocation();
+    const from = location.state?.from;
     const { id: empleadoIdParaNomina, nomina_id } = useParams();
     const isCreating = !nomina_id;
 
@@ -157,109 +160,175 @@ export function TasksbuttonsPages() {
         }
     }, [empleadoIdParaNomina, watch, empleados]);
 
-    // 5. Calcula Ingresos Brutos, Deducciones y Sueldo Neto
+    // 5. Calcula Ingresos Brutos, Deducciones y Sueldo Neto y Bono Total (reinicio en agosto)
     useEffect(() => {
-        const base = parseFloat(salarioBaseEmpleado);
-        const hours = parseFloat(nominaHorasExtra) || 0;
-        let bonusAmount = parseFloat(bono) || 0;
-        const incentivesAmount = parseFloat(incentivo) || 0;
-        const isrDeduction = parseFloat(isr) || 0;
-        const tipoNomina = watch("nomina_tipo", "");
-        const fechaNomina = watch("nom_fecha", "");
+        const calcularBonos = async () => {
+            const base = parseFloat(salarioBaseEmpleado);
+            const hours = parseFloat(nominaHorasExtra) || 0;
+            let bonusAmount = parseFloat(bono) || 0;
+            const incentivesAmount = parseFloat(incentivo) || 0;
+            const isrDeduction = parseFloat(isr) || 0;
+            const tipoNomina = watch("nomina_tipo", "");
+            const fechaNomina = watch("nom_fecha", "");
+            const empleadoId = watch("empleado");
 
-        // --- Cálculo de Bono 14 ---
-        let bono14 = 0;
-        if (!isNaN(base) && base > 0 && tipoNomina && fechaNomina) {
-            const fecha = new Date(fechaNomina);
-            if (tipoNomina === "Mensual") {
-                // Cada mes
-                bono14 = base / 12;
-            } else if (tipoNomina === "Quincenal") {
-                // Solo en la segunda quincena del mes
-                // Asumimos que la segunda quincena es cuando el día es mayor a 15
-                if (fecha.getDate() > 15) {
-                    bono14 = base / 24;
-                }
-            } else if (tipoNomina === "Semanal") {
-                // Solo en la última semana del mes
-                // Si la semana contiene el último día del mes
-                const lastDayOfMonth = new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0).getDate();
-                // Si la fecha está en los últimos 7 días del mes
-                if (fecha.getDate() > lastDayOfMonth - 7) {
-                    bono14 = base / 52;
+            // --- Cálculo de Bono 14 ---
+            let bono14 = 0;
+            if (!isNaN(base) && base > 0 && tipoNomina && fechaNomina) {
+                const fecha = new Date(fechaNomina);
+                if (tipoNomina === "Mensual") {
+                    bono14 = base / 12;
+                } else if (tipoNomina === "Quincenal") {
+                    if (fecha.getDate() > 15) {
+                        bono14 = base / 24;
+                    }
+                } else if (tipoNomina === "Semanal") {
+                    const lastDayOfMonth = new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0).getDate();
+                    if (fecha.getDate() > lastDayOfMonth - 7) {
+                        bono14 = base / 52;
+                    }
                 }
             }
-        }
-        // Sumar bono 14 automáticamente al campo de bonos (sin sobreescribir si el usuario ya lo puso manualmente)
-        // Si el bono 14 calculado es distinto al que ya está, lo actualizamos
-        if (bono14 > 0 && Math.abs(bono - bono14) > 0.01) {
-            setValue("nomina_bono", bono14.toFixed(2), { shouldValidate: false });
-            bonusAmount = bono14;
-        } else if (bono14 === 0 && bono !== 0) {
-            setValue("nomina_bono", 0, { shouldValidate: false });
-            bonusAmount = 0;
-        }
-
-        // Calcular bono_total como la suma acumulada de bonos anteriores + el actual
-        const totalBonos = bonoAcumulado + (parseFloat(bonusAmount) || 0);
-        setValue("bono_total", totalBonos.toFixed(2), { shouldValidate: false });
-
-        let sueldoBasePeriodo = 0;
-        if (!isNaN(base) && base > 0 && tipoNomina) {
-            switch (tipoNomina) {
-                case "Mensual":
-                    sueldoBasePeriodo = base;
-                    break;
-                case "Quincenal":
-                    sueldoBasePeriodo = base / 2;
-                    break;
-                case "Semanal":
-                    sueldoBasePeriodo = base / 4;
-                    break;
-                default:
-                    sueldoBasePeriodo = base;
-                    break;
+            if (bono14 > 0 && Math.abs(bono - bono14) > 0.01) {
+                setValue("nomina_bono", bono14.toFixed(2), { shouldValidate: false });
+                bonusAmount = bono14;
+            } else if (bono14 === 0 && bono !== 0) {
+                setValue("nomina_bono", 0, { shouldValidate: false });
+                bonusAmount = 0;
             }
-        }
 
-        let pagoCalculadoOT = 0;
-        if (!isNaN(base) && base > 0 && hours >= 0 && tipoNomina && STANDARD_HOURS[tipoNomina]) {
-            const standardHoursForPeriod = STANDARD_HOURS[tipoNomina];
-            if (standardHoursForPeriod > 0) {
-                const regularHourlyRate = base / standardHoursForPeriod;
-                if (!isNaN(regularHourlyRate) && regularHourlyRate >= 0) {
-                    const overtimeHourlyRate = regularHourlyRate * OVERTIME_RATE_MULTIPLIER;
-                    pagoCalculadoOT = overtimeHourlyRate * hours;
+            // --- Cálculo de bono_total con reinicio en agosto ---
+            let bonoTotalCalculado = 0;
+            if (empleadoId && fechaNomina) {
+                try {
+                    const res = await getNominasPorEmpleado(empleadoId);
+                    const fechaActual = new Date(fechaNomina);
+                    const anioActual = fechaActual.getFullYear();
+                    const mesActual = fechaActual.getMonth() + 1; // 1-12
+                    if (mesActual === 8) { // Agosto: reinicio, solo el bono de agosto
+                        bonoTotalCalculado = parseFloat(bonusAmount) || 0;
+                    } else if (mesActual > 8 && mesActual <= 12) { // Septiembre a diciembre
+                        const bonosDesdeAgosto = res.data.filter(nomina => {
+                            if (!nomina.nom_fecha) return false;
+                            const fechaNom = new Date(nomina.nom_fecha);
+                            return fechaNom.getFullYear() === anioActual && (fechaNom.getMonth() + 1) >= 8 && (fechaNom.getMonth() + 1) < mesActual;
+                        });
+                        // Si se está editando, excluir la nómina actual
+                        const bonosFiltrados = isCreating
+                            ? bonosDesdeAgosto
+                            : bonosDesdeAgosto.filter(nomina => String(nomina.id) !== String(nomina_id) && String(nomina.nomina_id) !== String(nomina_id));
+                        bonoTotalCalculado = bonosFiltrados.reduce((acc, nomina) => acc + (parseFloat(nomina.nomina_bono) || 0), 0);
+                        bonoTotalCalculado += parseFloat(bonusAmount) || 0;
+                    } else if (mesActual >= 1 && mesActual <= 7) { // Enero a julio
+                        const bonosDesdeAgostoAnterior = res.data.filter(nomina => {
+                            if (!nomina.nom_fecha) return false;
+                            const fechaNom = new Date(nomina.nom_fecha);
+                            const anioNom = fechaNom.getFullYear();
+                            const mesNom = fechaNom.getMonth() + 1;
+                            return (
+                                (anioNom === (anioActual - 1) && mesNom >= 8) ||
+                                (anioNom === anioActual && mesNom <= mesActual && mesNom <= 7)
+                            );
+                        });
+                        const bonosFiltrados = isCreating
+                            ? bonosDesdeAgostoAnterior
+                            : bonosDesdeAgostoAnterior.filter(nomina => String(nomina.id) !== String(nomina_id) && String(nomina.nomina_id) !== String(nomina_id));
+                        bonoTotalCalculado = bonosFiltrados.reduce((acc, nomina) => acc + (parseFloat(nomina.nomina_bono) || 0), 0);
+                        bonoTotalCalculado += parseFloat(bonusAmount) || 0;
+                    }
+                } catch (e) {
+                    bonoTotalCalculado = parseFloat(bonusAmount) || 0;
+                }
+            } else {
+                bonoTotalCalculado = parseFloat(bonusAmount) || 0;
+            }
+            setValue("bono_total", bonoTotalCalculado.toFixed(2), { shouldValidate: false });
+
+            let sueldoBasePeriodo = 0;
+            if (!isNaN(base) && base > 0 && tipoNomina) {
+                switch (tipoNomina) {
+                    case "Mensual":
+                        sueldoBasePeriodo = base;
+                        break;
+                    case "Quincenal":
+                        sueldoBasePeriodo = base / 2;
+                        break;
+                    case "Semanal":
+                        sueldoBasePeriodo = base / 4;
+                        break;
+                    default:
+                        sueldoBasePeriodo = base;
+                        break;
                 }
             }
-        }
 
-        let grossRemuneration = sueldoBasePeriodo + pagoCalculadoOT + bonusAmount + incentivesAmount;
-        const iggsCalculado = grossRemuneration * IGSS_RATE;
-        const sueldoNominaCalculado = grossRemuneration - iggsCalculado - isrDeduction;
+            let pagoCalculadoOT = 0;
+            if (!isNaN(base) && base > 0 && hours >= 0 && tipoNomina && STANDARD_HOURS[tipoNomina]) {
+                const standardHoursForPeriod = STANDARD_HOURS[tipoNomina];
+                if (standardHoursForPeriod > 0) {
+                    const regularHourlyRate = base / standardHoursForPeriod;
+                    if (!isNaN(regularHourlyRate) && regularHourlyRate >= 0) {
+                        const overtimeHourlyRate = regularHourlyRate * OVERTIME_RATE_MULTIPLIER;
+                        pagoCalculadoOT = overtimeHourlyRate * hours;
+                    }
+                }
+            }
 
-        setValue("nomina_iggs", iggsCalculado.toFixed(2));
-        setValue("nomina_sueldo", sueldoNominaCalculado.toFixed(2));
-
-    }, [salarioBaseEmpleado, nominaHorasExtra, tipoNomina, bono, incentivo, isr, setValue, watch, bonoAcumulado]);
+            let grossRemuneration = sueldoBasePeriodo + pagoCalculadoOT + bonusAmount + incentivesAmount;
+            const iggsCalculado = grossRemuneration * IGSS_RATE;
+            const sueldoNominaCalculado = grossRemuneration - iggsCalculado - isrDeduction;
+            setValue("nomina_iggs", iggsCalculado.toFixed(2));
+            setValue("nomina_sueldo", sueldoNominaCalculado.toFixed(2));
+        };
+        calcularBonos();
+    }, [salarioBaseEmpleado, nominaHorasExtra, tipoNomina, bono, incentivo, isr, setValue, watch, isCreating, nomina_id]);
 
     //Manejador de Envío
     const onSubmit = handleSubmit(async data => {
-        let totalBonosPrevios = 0;
+        let bonoTotalFinal = 0;
         try {
-            if (data.empleado) {
+            if (data.empleado && data.nom_fecha) {
                 const res = await getNominasPorEmpleado(data.empleado);
-                // Si es edición, excluye la nómina actual del cálculo
-                const nominasFiltradas = isCreating
-                    ? res.data
-                    : res.data.filter(nomina => String(nomina.id) !== String(nomina_id) && String(nomina.nomina_id) !== String(nomina_id));
-                totalBonosPrevios = nominasFiltradas.reduce((acc, nomina) => acc + (parseFloat(nomina.nomina_bono) || 0), 0);
+                const fechaActual = new Date(data.nom_fecha);
+                const anioActual = fechaActual.getFullYear();
+                const mesActual = fechaActual.getMonth() + 1; // 1-12
+                if (mesActual === 8) { // Agosto: reinicio, solo el bono de agosto
+                    bonoTotalFinal = parseFloat(data.nomina_bono) || 0;
+                } else if (mesActual > 8 && mesActual <= 12) { // Septiembre a diciembre
+                    const nominasDesdeAgosto = res.data.filter(nomina => {
+                        if (!nomina.nom_fecha) return false;
+                        const fechaNom = new Date(nomina.nom_fecha);
+                        return fechaNom.getFullYear() === anioActual && (fechaNom.getMonth() + 1) >= 8 && (fechaNom.getMonth() + 1) < mesActual;
+                    });
+                    const bonosDesdeAgosto = isCreating
+                        ? nominasDesdeAgosto
+                        : nominasDesdeAgosto.filter(nomina => String(nomina.id) !== String(nomina_id) && String(nomina.nomina_id) !== String(nomina_id));
+                    bonoTotalFinal = bonosDesdeAgosto.reduce((acc, nomina) => acc + (parseFloat(nomina.nomina_bono) || 0), 0);
+                    bonoTotalFinal += parseFloat(data.nomina_bono) || 0;
+                } else if (mesActual >= 1 && mesActual <= 7) { // Enero a julio
+                    // Sumar bonos desde agosto del año anterior hasta el mes actual
+                    const nominasDesdeAgostoAnterior = res.data.filter(nomina => {
+                        if (!nomina.nom_fecha) return false;
+                        const fechaNom = new Date(nomina.nom_fecha);
+                        const anioNom = fechaNom.getFullYear();
+                        const mesNom = fechaNom.getMonth() + 1;
+                        return (
+                            (anioNom === (anioActual - 1) && mesNom >= 8) ||
+                            (anioNom === anioActual && mesNom <= mesActual && mesNom <= 7)
+                        );
+                    });
+                    const bonosDesdeAgostoAnterior = isCreating
+                        ? nominasDesdeAgostoAnterior
+                        : nominasDesdeAgostoAnterior.filter(nomina => String(nomina.id) !== String(nomina_id) && String(nomina.nomina_id) !== String(nomina_id));
+                    bonoTotalFinal = bonosDesdeAgostoAnterior.reduce((acc, nomina) => acc + (parseFloat(nomina.nomina_bono) || 0), 0);
+                    bonoTotalFinal += parseFloat(data.nomina_bono) || 0;
+                }
+            } else {
+                bonoTotalFinal = parseFloat(data.nomina_bono) || 0;
             }
         } catch (e) {
-            totalBonosPrevios = 0;
+            bonoTotalFinal = parseFloat(data.nomina_bono) || 0;
         }
-        // Siempre suma el bono actual del formulario
-        const bonoTotalFinal = (totalBonosPrevios + (parseFloat(data.nomina_bono) || 0)).toFixed(2);
         const payload = {
             ...data,
             empleado: parseInt(data.empleado) || null,
@@ -269,7 +338,7 @@ export function TasksbuttonsPages() {
             nomina_incentivos: parseFloat(data.nomina_incentivos) || 0,
             nomina_isr: parseFloat(data.nomina_isr) || 0,
             nomina_iggs: parseFloat(data.nomina_iggs) || 0,
-            bono_total: bonoTotalFinal, // Enviar como string decimal
+            bono_total: bonoTotalFinal.toFixed(2), // Enviar como string decimal
         };
         console.log("Payload a enviar:", payload);
         try {
@@ -280,7 +349,7 @@ export function TasksbuttonsPages() {
                 await updateTask(nomina_id, payload);
                 toast.success("Nómina actualizada!");
             }
-            navigate("/tasks");
+            navigate(`/tasks-nomina/${empleadoIdParaNomina}`);
         } catch (error) {
             console.error("Error al guardar:", error);
             const errorMsg = error.response?.data?.detail || error.message || "Error desconocido.";
@@ -295,7 +364,7 @@ export function TasksbuttonsPages() {
             try {
                 await deleteTask(nomina_id);
                 toast.success("Nómina eliminada!");
-                navigate("/tasks"); 
+                navigate(`/tasks-nomina/${empleadoIdParaNomina}`);
             } catch (error) {
                 console.error("Error al eliminar la nómina:", error);
                 toast.error("No se pudo eliminar la nómina.");
@@ -380,11 +449,19 @@ export function TasksbuttonsPages() {
                     <div>
                         <label className="block text-sm font-medium text-gray-300 mb-1">Bono Total Acumulado</label>
                         <div className="bg-zinc-800 p-3 rounded-lg block w-full h-14 text-gray-400 border border-zinc-700 flex items-center">
-                            {bonoAcumulado + (isCreating ? (parseFloat(watch("nomina_bono")) || 0) : 0)}
+                            {Number(watch("bono_total")).toFixed(2)}
                         </div>
                     </div>
                     <div className="md:col-span-2 mt-4 flex justify-between">
-                         <button type="button" onClick={() => navigate("/tasks")} className="w-full bg-orange-600 p-3 rounded-lg
+                         <button type="button" 
+                         onClick={() => {
+                             if (from === "rep-nomina") {
+                              navigate("/tasks-rep-nomina");
+                             } else {
+                              navigate(`/tasks-nomina/${empleadoIdParaNomina}`);
+                                    }
+                                 }}
+                         className="w-full bg-orange-600 p-3 rounded-lg
                             text-white font-semibold hover:bg-orange-700 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50">
                             Cancelar
                         </button>

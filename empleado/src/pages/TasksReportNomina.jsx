@@ -83,6 +83,7 @@ const ListaNominas = () => {
                 <td className="border px-4 py-2 text-center">
                   <Link
                     to={`/tasks-boton/${nomina.empleado}/${nomina.nomina_id || nomina.id}`}
+                    state={{ from: "rep-nomina" }}
                     className="bg-green-800 hover:bg-green-700 text-white font-bold py-1 px-2 rounded text-sm"
                   >
                     Ver detalles

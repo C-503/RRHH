@@ -51,35 +51,42 @@ export function TasksFormPages() {
     return (
         <div className="max-w-xl mx-auto">
             <form onSubmit={onSubmit}>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Nombre</label>
                 <input type="text" placeholder="Nombre"
                     {...register("nombre", { required: true })}
                     className="bg-zinc-700 p-3 rounded-lg block w-full mb-3 text-white"
                 />
+                <label className="block text-sm font-medium text-gray-300 mb-1">Apellido</label>
                 {errors.nombre && <span className="text-red-400">Este campo es requerido</span>}
                 <input type="text" placeholder="Apellido"
                     {...register("apellido", { required: true })}
                     className="bg-zinc-700 p-3 rounded-lg block w-full mb-3 text-white"
                 />
+                <label className="block text-sm font-medium text-gray-300 mb-1">Departamento</label>
                 {errors.apellido && <span className="text-red-400">Este campo es requerido</span>}
                 <input type="text" placeholder="Departamento"
                     {...register("departamento", { required: true })}
                     className="bg-zinc-700 p-3 rounded-lg block w-full mb-3 text-white"
                 />
+                <label className="block text-sm font-medium text-gray-300 mb-1">Puesto</label>
                 {errors.departamento && <span className="text-red-400">Este campo es requerido</span>}
                 <input type="text" placeholder="Puesto"
                     {...register("pueesto", { required: true })}
                     className="bg-zinc-700 p-3 rounded-lg block w-full mb-3 text-white"
                 />
+                <label className="block text-sm font-medium text-gray-300 mb-1">Salario</label>
                 {errors.pueesto && <span className="text-red-400">Este campo es requerido</span>}
                 <input type="text" placeholder="Salario"
                     {...register("salario_base", { required: true })}
                     className="bg-zinc-700 p-3 rounded-lg block w-full mb-3 text-white"
                 />
+                <label className="block text-sm font-medium text-gray-300 mb-1">Fecha de Contratacion</label>
                 {errors.salario_base && <span className="text-red-400">Este campo es requerido</span>}
                 <input type="date" placeholder="Fecha de contratación"
                     {...register("fecha_contratacion", { required: true })}
                     className="bg-zinc-700 p-3 rounded-lg block w-full mb-3 text-white"
                 />
+                <label className="block text-sm font-medium text-gray-300 mb-1">Estado</label>
                 {errors.fecha_contratacion && <span className="text-red-400">Este campo es requerido</span>}
                 <input
                     type="text"

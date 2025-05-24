@@ -6,6 +6,7 @@ export function TasksList() {
     const [empleados, setEmpleados] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [search, setSearch] = useState(""); // Estado para la búsqueda
 
     useEffect(() => {
         async function loadData() {
@@ -28,6 +29,11 @@ export function TasksList() {
     // Filtramos los empleados que tienen un estado_indemnizacion igual a 0
     const empleadosSinIndemnizacionActiva = empleados.filter(empleado => empleado.estado_indemnizacion === 0);
 
+    // Filtrar por nombre según la búsqueda
+    const empleadosFiltrados = empleadosSinIndemnizacionActiva.filter(empleado =>
+        empleado.nombre?.toLowerCase().includes(search.toLowerCase())
+    );
+
     if (loading) {
         return <p className="text-gray-300">Cargando empleados...</p>;
     }
@@ -37,10 +43,21 @@ export function TasksList() {
     }
 
     return (
-        <div className="grid grid-cols-7 gap-7">
-            {empleadosSinIndemnizacionActiva.map(empleado => (
-                <TaskCard key={empleado.id_empleado} task={empleado} />
-            ))}
-        </div>
+        <>
+            <div className="mb-4 flex justify-left">
+                <input
+                    type="text"
+                    placeholder="Buscar por nombre..."
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    className="border border-zinc-300 dark:border-zinc-700 rounded-lg px-3 py-2 w-80 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:bg-zinc-900 dark:text-white"
+                />
+            </div>
+            <div className="grid grid-cols-7 gap-7">
+                {empleadosFiltrados.map(empleado => (
+                    <TaskCard key={empleado.id_empleado} task={empleado} />
+                ))}
+            </div>
+        </>
     );
 }

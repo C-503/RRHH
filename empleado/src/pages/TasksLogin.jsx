@@ -22,15 +22,17 @@ function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#202020] font-inter">
+      
       <form
         onSubmit={handleSubmit}
-        className="bg-white p-8 rounded-lg shadow-md w-full max-w-sm"
+        className="bg-gray-600 p-8 rounded-lg shadow-md w-full max-w-sm"
       >
-        <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">
+        <h2 className="text-2xl font-bold text-center mb-6 text-white-700">
           Iniciar Sesión
         </h2>
+        
         <div className="mb-4">
-          <label htmlFor="username" className="block text-gray-700 text-sm font-bold mb-2">
+          <label htmlFor="username" className="block text-white-700 text-sm font-bold mb-2">
             Usuario
           </label>
           <input
@@ -40,11 +42,11 @@ function Login() {
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             required
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500"
+            className="shadow appearance-none border rounded w-full py-2 px-3 text-grey-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500"
           />
         </div>
         <div className="mb-6">
-          <label htmlFor="password" className="block text-gray-700 text-sm font-bold mb-2">
+          <label htmlFor="password" className="block text-white-700 text-sm mb-2">
             Contraseña
           </label>
           <input
@@ -54,7 +56,7 @@ function Login() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500"
+            className="shadow appearance-none border rounded w-full py-2 px-3 text-white-700 mb-3 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500"
           />
         </div>
         <button
